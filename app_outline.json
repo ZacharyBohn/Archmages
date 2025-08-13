@@ -1,0 +1,66 @@
+
+{
+  "project_name": "Elemental Conquest",
+  "version": "0.1.0",
+  "description": "A mobile-first RTS game built with Flutter.",
+  "screens": [
+    {
+      "name": "MainGameScreen",
+      "description": "The primary screen for gameplay, displaying the world map, HUD, and handling user interactions.",
+      "components": [
+        "WorldMapWidget",
+        "HudWidget",
+        "WorldPopupWidget"
+      ]
+    },
+    {
+      "name": "MainMenuScreen",
+      "description": "The initial screen of the game, with options to start a new game, load a game, or view settings.",
+      "components": [
+        "NewGameButton",
+        "LoadGameButton",
+        "SettingsButton"
+      ]
+    }
+  ],
+  "game_logic": {
+    "GameController": {
+      "description": "The main class for managing game state, including resources, worlds, infrastructure, and combat.",
+      "responsibilities": [
+        "Update game state every tick.",
+        "Manage player resources.",
+        "Handle infrastructure building and upgrades.",
+        "Control combat between mages and elementals.",
+        "Manage game events (e.g., elemental spawns)."
+      ]
+    },
+    "models": [
+      {
+        "name": "World",
+        "description": "Represents a single world in the game.",
+        "properties": ["id", "name", "type", "connections", "infrastructure", "elementals"]
+      },
+      {
+        "name": "Infrastructure",
+        "description": "Represents a building on a world.",
+        "properties": ["id", "type", "level"]
+      },
+      {
+        "name": "Unit",
+        "description": "Represents a combat unit (Mage or Elemental).",
+        "properties": ["id", "type", "health", "attack"]
+      },
+      {
+        "name": "Player",
+        "description": "Represents the player's state.",
+        "properties": ["resources", "mages"]
+      }
+    ]
+  },
+  "services": [
+    {
+      "name": "PersistenceService",
+      "description": "Handles saving and loading game state to and from the device."
+    }
+  ]
+}

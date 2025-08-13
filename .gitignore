@@ -43,8 +43,3 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-
-# Gemini CLI generated files
-designs.md
-app_outline.json
-app_flows.md
