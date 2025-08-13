@@ -12,6 +12,6 @@ Tap here to start playing!
 
 ## Game Overview
 
-View a list of rules here: (Rules)[designs.md]
+[Game Mechanics](designs.md)
 
 
