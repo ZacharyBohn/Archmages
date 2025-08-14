@@ -1,6 +1,6 @@
-# Elemental Conquest
+# Archmage RTS
 
-A real-time strategy (RTS) game built with Flutter.
+A real-time strategy game
 
 ## Play the Game
 
@@ -12,6 +12,4 @@ Tap here to start playing!
 
 ## Game Overview
 
-[Game Mechanics](designs.md)
-
-
+TODO
