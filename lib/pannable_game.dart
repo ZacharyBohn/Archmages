@@ -7,26 +7,21 @@ import 'package:flame/input.dart';
 import 'package:flame/game.dart';
 
 class PannableGame<T extends World> extends FlameGame<T>
-    with PanDetector, ScrollDetector, MultiTouchTapDetector, ScaleDetector {
+    with ScrollDetector, MultiTouchTapDetector, ScaleDetector {
   PannableGame({
     required super.world,
     required this.worldSize,
     Color? backgroundColor,
-  }) : _backgroundColor = backgroundColor ?? Color(0xFFBBBBBB);
+  }) : _backgroundColor = backgroundColor ?? const Color(0xFFBBBBBB);
 
-  Color _backgroundColor;
+  final Color _backgroundColor;
   final double minZoom = 0.5;
   final double maxZoom = 3.0;
+  late double _startZoom;
 
   @override
   Color backgroundColor() => _backgroundColor;
   final Vector2 worldSize;
-
-  @override
-  void onPanUpdate(DragUpdateInfo info) {
-    camera.viewfinder.position -= info.delta.global / camera.viewfinder.zoom;
-    _clampCamera();
-  }
 
   void _setZoom(double value) {
     camera.viewfinder.zoom = value.clamp(minZoom, maxZoom);
@@ -39,8 +34,19 @@ class PannableGame<T extends World> extends FlameGame<T>
   }
 
   @override
+  void onScaleStart(ScaleStartInfo info) {
+    _startZoom = camera.viewfinder.zoom;
+  }
+
+  @override
   void onScaleUpdate(ScaleUpdateInfo info) {
-    _setZoom(camera.viewfinder.zoom * info.scale.global.x);
+    final currentScale = info.scale.global;
+    if (!currentScale.isIdentity()) {
+      _setZoom(_startZoom * currentScale.y);
+    } else {
+      camera.viewfinder.position -= info.delta.global / camera.viewfinder.zoom;
+      _clampCamera();
+    }
   }
 
   void _clampCamera() {
