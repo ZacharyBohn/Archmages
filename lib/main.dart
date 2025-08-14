@@ -3,7 +3,7 @@ import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
-import 'pannable_game.dart';
+import 'package:archmage_rts/pannable_game.dart';
 import 'game_world.dart';
 import 'line_component.dart';
 

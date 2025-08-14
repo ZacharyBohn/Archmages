@@ -1,6 +1,6 @@
 {
-    "name": "flutter_rts",
-    "short_name": "flutter_rts",
+    "name": "Archmage RTS",
+    "short_name": "Archmage RTS",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
