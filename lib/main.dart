@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 
 import 'package:archmage_rts/pannable_game.dart';
 import 'game_world.dart';
+import 'generate_worlds.dart';
+import 'hud.dart';
 import 'line_component.dart';
 
 void main() {
@@ -25,53 +27,27 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
   @override
   Future<void> onLoad() async {
     // --- Worlds ---
-    addWorld(
-      GameWorld(
-        'W1',
-        30,
-        Vector2(0, 0),
-        Colors.purple,
-        connectedWorlds: ['W2', 'W3', 'W4'],
-      ),
-    );
-    addWorld(
-      GameWorld(
-        'W2',
-        30,
-        Vector2(600, 600),
-        Colors.red,
-        connectedWorlds: ['W1'],
-      ),
-    );
-    addWorld(
-      GameWorld(
-        'W3',
-        30,
-        Vector2(-600, 600),
-        Colors.blue,
-        connectedWorlds: ['W1'],
-      ),
-    );
-    addWorld(
-      GameWorld(
-        'W4',
-        30,
-        Vector2(350, 0),
-        Colors.green,
-        connectedWorlds: ['W1'],
-      ),
-    );
+    for (final world in generateWorlds()) {
+      addWorld(world);
+    }
+
     // --- HUD ---
-    final text = TextComponent(
-      text: 'HUD Element',
-      position: Vector2(10, 10),
-      textRenderer: TextPaint(
-        style: const TextStyle(color: Colors.white, fontSize: 16),
-      ),
-    );
-    game.camera.viewport.add(text);
+    game.camera.viewport.add(Hud());
   }
 
+  @override
+  void update(double dt) {
+    // cannot be less than 0
+    // this zooms out
+    //
+    // use += to zoom in
+    // game.camera.viewfinder.zoom -= dt;
+    return;
+  }
+
+  /// Adds the game world to the FlameWorld
+  /// And draws any connections. Connections are guarenteed
+  /// to be drawn only once.
   void addWorld(GameWorld world) {
     final component = CircleComponent(
       radius: world.size,
@@ -101,15 +77,5 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
       add(line);
     }
     add(component);
-  }
-
-  @override
-  void update(double dt) {
-    // cannot be less than 0
-    // this zooms out
-    //
-    // use += to zoom in
-    // game.camera.viewfinder.zoom -= dt;
-    return;
   }
 }
