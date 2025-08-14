@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_rts/data_classes.dart';
 import 'package:flutter_rts/game_state.dart';
-import 'package:flutter_rts/map_generator.dart';
-import 'package:flutter_rts/world_popup.dart';
 import 'package:provider/provider.dart';
 
+import 'camera.dart';
+import 'world_widget.dart';
+
 class GameView extends StatelessWidget {
+  const GameView({super.key});
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<GameState>();
@@ -20,17 +23,24 @@ class GameView extends StatelessWidget {
             onPanUpdate: (details) {
               state.emit(OnPanUpdate(details));
             },
-            onTapUp: (details) {
-              state.emit(OnTap(details));
-            },
-            child: Transform.translate(
-              offset: state.offset,
-              child: CustomPaint(
-                size: Size.infinite,
-                painter: WorldMapPainter(
-                  worlds: state.worlds,
-                  connections: state.connections,
-                ),
+            child: Camera(
+              position: state.offset,
+              child: Stack(
+                children: [
+                  // CustomPaint(
+                  //   size: Size.infinite,
+                  //   painter: ConnectionsPainter(connections: state.connections),
+                  // ),
+                  // for (final world in state.worlds.values)
+                  //   Positioned(
+                  //     left: world.position.dx - world.radius,
+                  //     top: world.position.dy - world.radius,
+                  //     child: GestureDetector(
+                  //       onTap: () => state.emit(OnTap(world.id)),
+                  //       child: WorldWidget(world),
+                  //     ),
+                  //   ),
+                ],
               ),
             ),
           ),
@@ -96,18 +106,13 @@ class Hud extends StatelessWidget {
   }
 }
 
-class WorldMapPainter extends CustomPainter {
-  final List<World> worlds;
+class ConnectionsPainter extends CustomPainter {
   final List<Connection> connections;
 
-  WorldMapPainter({required this.worlds, required this.connections});
+  ConnectionsPainter({required this.connections});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final Paint worldPaint = Paint()
-      ..style = PaintingStyle.fill
-      ..strokeWidth = 2.0;
-
     final Paint connectionPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
@@ -121,34 +126,10 @@ class WorldMapPainter extends CustomPainter {
         connectionPaint,
       );
     }
-
-    // Draw worlds
-    for (var world in worlds) {
-      worldPaint.color = world.color;
-      canvas.drawCircle(world.position, world.radius, worldPaint);
-
-      // Draw world ID
-      final TextPainter textPainter = TextPainter(
-        text: TextSpan(
-          text: world.id,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 12.0,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout();
-      textPainter.paint(
-        canvas,
-        world.position - Offset(textPainter.width / 2, textPainter.height / 2),
-      );
-    }
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true; // For simplicity, always repaint for now
+    return true;
   }
 }

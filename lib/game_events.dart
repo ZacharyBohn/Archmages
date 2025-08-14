@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_rts/data_classes.dart';
 
 abstract class GameEvent {}
 
@@ -13,6 +14,20 @@ class OnPanUpdate extends GameEvent {
 }
 
 class OnTap extends GameEvent {
-  OnTap(this.details);
-  final TapUpDetails details;
+  OnTap(this.worldId);
+  final String worldId;
+}
+
+class OnBuildInfra extends GameEvent {
+  OnBuildInfra(this.worldID, this.type);
+
+  final String worldID;
+  final InfrastructureType type;
+}
+
+class OnUpgradeInfra extends GameEvent {
+  OnUpgradeInfra(this.worldID, this.type);
+
+  final String worldID;
+  final InfrastructureType type;
 }

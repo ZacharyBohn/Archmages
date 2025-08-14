@@ -1,17 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_rts/data_classes.dart';
+import 'package:provider/provider.dart';
+
+import 'game_state.dart';
 
 class WorldPopup extends StatelessWidget {
-  final World world;
-  final Function(World, InfrastructureType)? onBuild;
-  final Function(World, Infrastructure)? onUpgrade;
-
-  const WorldPopup({
-    super.key,
-    required this.world,
-    this.onBuild,
-    this.onUpgrade,
-  });
+  final String worldID;
+  const WorldPopup(this.worldID, {super.key});
 
   String _getColorName(Color color) {
     if (color == Colors.blue) return 'Blue';
@@ -43,6 +38,12 @@ class WorldPopup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<GameState>();
+    final world = state.worlds[worldID];
+    if (world == null) {
+      return Container();
+    }
+    // TODO: clean up this UI
     return AlertDialog(
       backgroundColor: Colors.grey[800],
       title: Text(
@@ -99,7 +100,8 @@ class WorldPopup extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.only(left: 16.0),
                         child: ElevatedButton(
-                          onPressed: () => onUpgrade?.call(world, infra),
+                          onPressed: () =>
+                              state.emit(OnUpgradeInfra(world.id, infra.type)),
                           child: Text('Upgrade'),
                         ),
                       ),
@@ -140,7 +142,7 @@ class WorldPopup extends StatelessWidget {
                   return Container(); // Already built
                 }
                 return ElevatedButton(
-                  onPressed: () => onBuild?.call(world, type),
+                  onPressed: () => state.emit(OnBuildInfra(world.id, type)),
                   child: Text(Infrastructure(type: type).name),
                 );
               }).toList(),

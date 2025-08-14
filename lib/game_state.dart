@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_rts/main_game_screen.dart';
 import 'package:flutter_rts/map_generator.dart';
+import 'package:provider/provider.dart';
 import 'package:state_view/state_view.dart';
 
 import 'data_classes.dart';
@@ -16,24 +17,22 @@ class Game extends StateView<GameState> {
 
 class GameState extends StateProvider<Game, GameEvent> {
   GameState(super.context) {
-    // TODO
-    // Adding world / connections should be one thing
-    connections = [
-      Connection(world1: worlds[0], world2: worlds[1]),
-      Connection(world1: worlds[1], world2: worlds[2]),
-      Connection(world1: worlds[2], world2: worlds[0]),
-      Connection(world1: worlds[1], world2: worlds[3]),
-      Connection(world1: worlds[3], world2: worlds[4]),
-      Connection(world1: worlds[4], world2: worlds[2]),
-    ];
-    registerHandler<OnPanStart>(_onPanStart);
+    final map = generateMap(Offset.zero);
+    worlds = map.$1;
+    connections = map.$2;
+    registerHandler<OnPanStart>(_handlePanStart);
+    registerHandler<OnPanUpdate>(_handlePanUpdate);
+    registerHandler<OnTap>(_handleTap);
+    registerHandler<OnBuildInfra>(_handleBuildInfra);
+    registerHandler<OnUpgradeInfra>(_handleUpgradeInfra);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _centerCamera();
+    });
   }
 
   Offset offset = Offset.zero;
   Offset lastFocalPoint = Offset.zero;
-
-  final List<World> worlds = generateMap();
-
+  late final Map<String, World> worlds;
   late final List<Connection> connections;
 
   int get water => _water;
@@ -51,89 +50,47 @@ class GameState extends StateProvider<Game, GameEvent> {
 
   // --- Handlers ---
 
-  void _onPanStart(OnPanStart event) {
+  void _handlePanStart(OnPanStart event) {
     lastFocalPoint = event.details.globalPosition;
+    notifyListeners();
   }
 
-  void _onPanUpdate(OnPanUpdate event) {
+  void _handlePanUpdate(OnPanUpdate event) {
     final details = event.details;
     offset += (details.globalPosition - lastFocalPoint);
     lastFocalPoint = details.globalPosition;
+    notifyListeners();
   }
 
-  void _handleTap(TapUpDetails details) {
-    final tapPosition = details.localPosition;
-    final adjustedTapPosition = tapPosition - offset;
-
-    for (var world in worlds) {
-      final distance = (world.position - adjustedTapPosition).distance;
-      if (distance <= world.radius) {
-        _showWorldPopup(world);
-        break;
-      }
-    }
-  }
-
-  void _showWorldPopup(World world) {
-    showDialog(
+  void _handleTap(OnTap event) async {
+    await showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return WorldPopup(
-          world: world,
-          onBuild: _onBuildInfrastructure,
-          onUpgrade: _onUpgradeInfrastructure,
-        );
-      },
+      builder: (_) => ChangeNotifierProvider.value(
+        value: this,
+        child: WorldPopup(event.worldId),
+      ),
     );
+    notifyListeners();
   }
 
-  void _onBuildInfrastructure(World world, InfrastructureType type) {
-    // TODO: redo this, why not just do an update?
-    final newInfrastructure = Infrastructure(type: type);
-    final updatedInfrastructureList = List<Infrastructure>.from(
-      world.infrastructure,
-    )..add(newInfrastructure);
-
-    final updatedWorld = World(
-      id: world.id,
-      position: world.position,
-      type: world.type,
-      resourceAffinities: world.resourceAffinities,
-      infrastructure: updatedInfrastructureList,
-      elementals: world.elementals,
-    );
-
-    final worldIndex = worlds.indexOf(world);
-    if (worldIndex != -1) {
-      worlds[worldIndex] = updatedWorld;
-    }
-    // Navigator.of(context).pop(); // Close the popup
+  void _handleBuildInfra(OnBuildInfra event) {
+    worlds[event.worldID]!.infrastructure.add(Infrastructure(type: event.type));
+    notifyListeners();
   }
 
-  void _onUpgradeInfrastructure(World world, Infrastructure infrastructure) {
-    // TODO: redo this, why not just do an update?
-    final updatedInfrastructure = Infrastructure(
-      type: infrastructure.type,
-      level: infrastructure.level + 1,
-    );
+  void _handleUpgradeInfra(OnUpgradeInfra event) {
+    worlds[event.worldID]!.infrastructure
+            .firstWhere((infra) => infra.type == event.type)
+            .level +=
+        1;
+    notifyListeners();
+  }
 
-    final updatedInfrastructureList = world.infrastructure.map((infra) {
-      return infra == infrastructure ? updatedInfrastructure : infra;
-    }).toList();
+  // --- Helpers ---
 
-    final updatedWorld = World(
-      id: world.id,
-      position: world.position,
-      type: world.type,
-      resourceAffinities: world.resourceAffinities,
-      infrastructure: updatedInfrastructureList,
-      elementals: world.elementals,
-    );
-
-    final worldIndex = worlds.indexOf(world);
-    if (worldIndex != -1) {
-      worlds[worldIndex] = updatedWorld;
-    }
-    // Navigator.of(context).pop(); // Close the popup
+  void _centerCamera() {
+    final screenSize = MediaQuery.of(context).size;
+    offset = Offset(screenSize.width / 2, screenSize.height / 2);
+    notifyListeners();
   }
 }

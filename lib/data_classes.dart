@@ -11,6 +11,8 @@ enum InfrastructureType {
   scryingPool,
 }
 
+enum ResourceAffinity { water, food, metal, aura }
+
 enum ElementalType { fire, water, earth }
 
 class Infrastructure {
@@ -61,7 +63,7 @@ class World {
   final double radius;
   final Color color; // This will be derived from WorldType later
   final WorldType type;
-  final Map<String, double> resourceAffinities;
+  final Map<ResourceAffinity, double> resourceAffinities;
   final List<Infrastructure> infrastructure;
   final List<WildElemental> elementals;
 
