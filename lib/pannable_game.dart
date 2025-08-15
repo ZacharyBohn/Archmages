@@ -31,6 +31,7 @@ class PannableGame<T extends World> extends FlameGame<T>
   void onScroll(PointerScrollInfo info) {
     final delta = info.scrollDelta.global.y > 0 ? 0.1 : -0.1;
     _setZoom(camera.viewfinder.zoom + delta);
+    _clampCamera();
   }
 
   @override
@@ -56,14 +57,17 @@ class PannableGame<T extends World> extends FlameGame<T>
     final halfHeight = visibleRect.height / 2;
 
     // Clamp camera center position so the view doesn't leave world bounds
-    final minX = halfWidth;
-    final maxX = worldSize.x - halfWidth;
-    final minY = halfHeight;
-    final maxY = worldSize.y - halfHeight;
+    final minX = -(halfWidth + worldSize.x / 2);
+    final maxX = halfWidth + worldSize.x / 2;
+    final minY = -(halfHeight + worldSize.y / 2);
+    final maxY = halfHeight + worldSize.y / 2;
 
-    camera.viewfinder.position.setValues(
-      camera.viewfinder.position.x.clamp(minX, max(maxX, minX)),
-      camera.viewfinder.position.y.clamp(minY, max(maxY, minY)),
+    final camX = camera.viewfinder.position.x;
+    final camY = camera.viewfinder.position.y;
+
+    camera.viewfinder.position = Vector2(
+      camX.clamp(minX, maxX),
+      camY.clamp(minY, maxY),
     );
   }
 }
