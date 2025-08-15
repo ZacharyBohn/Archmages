@@ -1,3 +1,4 @@
+import 'package:archmage_rts/world_boundary.dart';
 import 'package:flame/components.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
@@ -15,7 +16,7 @@ void main() {
 
 class RTSGame extends PannableGame<RTSWorld> {
   RTSGame({required super.world})
-    : super(backgroundColor: Color(0xFF111111), worldSize: Vector2(1000, 1000));
+    : super(backgroundColor: Color(0xFF111111), worldSize: Vector2(5000, 5000));
 }
 
 class RTSWorld extends World with HasGameReference<RTSGame> {
@@ -27,9 +28,18 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
   @override
   Future<void> onLoad() async {
     // --- Worlds ---
-    for (final world in generateWorlds()) {
+    for (final world in generateWorlds(
+      minDistance: 150.0,
+      mapSize: game.worldSize,
+      worldCount: 80,
+      maxDistance: 350.0,
+      maxConnections: 4,
+    )) {
       addWorld(world);
     }
+
+    // --- Draw World Boundaries
+    add(WorldBoundary());
 
     // --- HUD ---
     game.camera.viewport.add(Hud());
@@ -49,12 +59,15 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
   /// And draws any connections. Connections are guarenteed
   /// to be drawn only once.
   void addWorld(GameWorld world) {
+    final posX = world.position.x.toInt().toString();
+    final posY = world.position.y.toInt().toString();
     final component = CircleComponent(
       radius: world.size,
       paint: Paint()..color = world.color,
       position: world.position,
       priority: 1,
       anchor: Anchor.center,
+      children: [TextComponent(text: '$posX, $posY', anchor: Anchor.center)],
     );
     gameWorlds[world.name] = component;
     for (final connectedWorldName in world.connectedWorlds) {
