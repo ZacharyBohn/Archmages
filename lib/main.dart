@@ -1,3 +1,4 @@
+import 'package:archmage_rts/game_world_component.dart';
 import 'package:archmage_rts/world_boundary.dart';
 import 'package:flame/components.dart';
 import 'package:flame/extensions.dart';
@@ -59,16 +60,7 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
   /// And draws any connections. Connections are guarenteed
   /// to be drawn only once.
   void addWorld(GameWorld world) {
-    final posX = world.position.x.toInt().toString();
-    final posY = world.position.y.toInt().toString();
-    final component = CircleComponent(
-      radius: world.size,
-      paint: Paint()..color = world.color,
-      position: world.position,
-      priority: 1,
-      anchor: Anchor.center,
-      children: [TextComponent(text: '$posX, $posY', anchor: Anchor.center)],
-    );
+    final component = GameWorldComponent.from(world);
     gameWorlds[world.name] = component;
     for (final connectedWorldName in world.connectedWorlds) {
       final connection = ([connectedWorldName, world.name]..sort()).toString();

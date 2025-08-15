@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/extensions.dart';
@@ -13,9 +15,18 @@ class PannableGame<T extends World> extends FlameGame<T>
   }) : _backgroundColor = backgroundColor ?? const Color(0xFFBBBBBB);
 
   final Color _backgroundColor;
-  final double minZoom = 0.5;
-  final double maxZoom = 3.0;
+  final double minZoom = 0.25;
+  final double maxZoom = 5.0;
   late double _startZoom;
+  Vector2 _panVelocity = Vector2.zero();
+  final _panDecayStop = 7.0;
+  static const double _panFriction = 2.5;
+
+  @override
+  void onTap(int pointerId) {
+    _panVelocity = Vector2.zero();
+    super.onTap(pointerId);
+  }
 
   @override
   Color backgroundColor() => _backgroundColor;
@@ -35,15 +46,36 @@ class PannableGame<T extends World> extends FlameGame<T>
   @override
   void onScaleStart(ScaleStartInfo info) {
     _startZoom = camera.viewfinder.zoom;
+    _panVelocity = Vector2.zero();
   }
 
   @override
   void onScaleUpdate(ScaleUpdateInfo info) {
+    _panVelocity = Vector2.zero();
     final currentScale = info.scale.global;
     if (!currentScale.isIdentity()) {
       _setZoom(_startZoom * currentScale.y);
     } else {
       camera.viewfinder.position -= info.delta.global / camera.viewfinder.zoom;
+      _clampCamera();
+    }
+  }
+
+  @override
+  void onScaleEnd(ScaleEndInfo info) {
+    _panVelocity = info.velocity.global;
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+
+    if (_panVelocity.length2 > 1) {
+      camera.viewfinder.position -= _panVelocity * dt / camera.viewfinder.zoom;
+      _panVelocity *= 1 - (_panFriction * dt);
+      if (_panVelocity.length < _panDecayStop) {
+        _panVelocity = Vector2.zero();
+      }
       _clampCamera();
     }
   }
