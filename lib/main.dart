@@ -16,7 +16,7 @@ void main() {
 
 class RTSGame extends PannableGame<RTSWorld> {
   RTSGame({required super.world})
-    : super(backgroundColor: Color(0xFF111111), worldSize: Vector2(1000, 1000));
+    : super(backgroundColor: Color(0xFF111111), worldSize: Vector2(5000, 5000));
 }
 
 class RTSWorld extends World with HasGameReference<RTSGame> {
@@ -28,48 +28,15 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
   @override
   Future<void> onLoad() async {
     // --- Worlds ---
-    // for (final world in generateWorlds(
-    //   minDistance: 150.0,
-    //   maxDistance: 400.0,
-    //   mapSize: game.worldSize,
-    //   worldCount: 20,
-    //   maxConnections: 5,
-    // )) {
-    //   addWorld(world);
-    // }
-    addWorld(GameWorld('W1', 30, Vector2(0, 0), Colors.purple));
-    addWorld(
-      GameWorld(
-        'TL',
-        30,
-        Vector2(-(game.worldSize.x / 2), -(game.worldSize.y / 2)),
-        Colors.purple,
-      ),
-    );
-    addWorld(
-      GameWorld(
-        'TR',
-        30,
-        Vector2(game.worldSize.x / 2, -(game.worldSize.y / 2)),
-        Colors.purple,
-      ),
-    );
-    addWorld(
-      GameWorld(
-        'BL',
-        30,
-        Vector2(-(game.worldSize.x / 2), game.worldSize.y / 2),
-        Colors.purple,
-      ),
-    );
-    addWorld(
-      GameWorld(
-        'BR',
-        30,
-        Vector2(game.worldSize.x / 2, game.worldSize.y / 2),
-        Colors.purple,
-      ),
-    );
+    for (final world in generateWorlds(
+      minDistance: 150.0,
+      mapSize: game.worldSize,
+      worldCount: 80,
+      maxDistance: 350.0,
+      maxConnections: 4,
+    )) {
+      addWorld(world);
+    }
 
     // --- Draw World Boundaries
     add(WorldBoundary());
