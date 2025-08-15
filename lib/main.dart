@@ -1,3 +1,4 @@
+import 'package:archmage_rts/background_noise.dart';
 import 'package:archmage_rts/game_world_component.dart';
 import 'package:archmage_rts/world_boundary.dart';
 import 'package:flame/components.dart';
@@ -26,8 +27,16 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
   // game world name -> game world component
   Map<String, PositionComponent> gameWorlds = {};
 
+  final worldBoundaryPadding = 100.0;
+
   @override
   Future<void> onLoad() async {
+    add(
+      await generateBackgroundNoise(
+        Size(game.worldSize.x, game.worldSize.y),
+        worldBoundaryPadding,
+      ),
+    );
     // --- Worlds ---
     for (final world in generateWorlds(
       minDistance: 150.0,
@@ -40,7 +49,7 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
     }
 
     // --- Draw World Boundaries
-    add(WorldBoundary());
+    add(WorldBoundary(game.worldSize, worldBoundaryPadding));
 
     // --- HUD ---
     game.camera.viewport.add(Hud());
