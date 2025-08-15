@@ -27,8 +27,13 @@ class GameWorldComponent extends CircleComponent {
   @override
   Future<void> onLoad() async {
     super.onLoad();
-    label = TextComponent(text: name, anchor: Anchor.center);
-    // add(label);
+    label = TextComponent(
+      text: name,
+      position: size / 2,
+      anchor: Anchor.center,
+      textRenderer: TextPaint(style: TextStyle(color: Colors.black)),
+    );
+    add(label);
     return;
   }
 }
