@@ -28,11 +28,38 @@ class GameWorldComponent extends CircleComponent
 
   GameWorld _gameWorld;
   late TextComponent label;
-  PositionComponent? mageCounter;
+  MageComponent? mageCounter;
   bool highlighted = false;
+
+  List<String> get connectedWorlds => _gameWorld.connectedWorlds;
+
+  int get mageCount => _gameWorld.mageCount;
 
   void setMageCount(int count) {
     _gameWorld.mageCount = count;
+  }
+
+  int decrementMages() {
+    // TODO
+    // maybe make this more than 1 optional
+    if (_gameWorld.mageCount > 0) {
+      _gameWorld.mageCount -= 1;
+      if (_gameWorld.mageCount == 0) {
+        _gameWorld.color = Color(0xFF505050);
+        setColor(Color(0xFF505050));
+      }
+      return 1;
+    }
+    return 0;
+  }
+
+  void incrementMages(int count) {
+    if (count == 0) {
+      return;
+    }
+    _gameWorld.mageCount += count;
+    _gameWorld.color = Colors.green;
+    setColor(Colors.green);
   }
 
   @override
@@ -50,6 +77,9 @@ class GameWorldComponent extends CircleComponent
   }
 
   _updateMageCounter() {
+    if (_gameWorld.mageCount > 0 && mageCounter != null) {
+      mageCounter!.updateCount(_gameWorld.mageCount);
+    }
     if (_gameWorld.mageCount > 0 && mageCounter == null) {
       final padding = 10;
       mageCounter = MageComponent(
@@ -59,9 +89,10 @@ class GameWorldComponent extends CircleComponent
         side: 40,
       );
       add(mageCounter!);
-    } else if (_gameWorld.mageCount == 0 && mageCounter != null) {
-      mageCounter = null;
+    }
+    if (_gameWorld.mageCount == 0 && mageCounter != null) {
       remove(mageCounter!);
+      mageCounter = null;
     }
   }
 

@@ -35,6 +35,10 @@ class MageComponent extends PositionComponent {
     add(_text);
   }
 
+  void updateCount(int count) {
+    _text.text = count.toString();
+  }
+
   @override
   void render(Canvas canvas) {
     super.render(canvas);

@@ -1,7 +1,8 @@
+import 'package:archmage_rts/main.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
-class Hud extends PositionComponent {
+class Hud extends PositionComponent with HasGameReference<RTSGame> {
   late final TextComponent hudElement;
 
   @override
@@ -18,8 +19,11 @@ class Hud extends PositionComponent {
 
   @override
   void update(double dt) {
-    // TODO
-    // update text if necessary
+    if (game.world.highlightedWorld == null) {
+      hudElement.text = 'Selected: None';
+    } else {
+      hudElement.text = 'Selected: ${game.world.highlightedWorld}';
+    }
     return;
   }
 }

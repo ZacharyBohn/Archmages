@@ -43,7 +43,7 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
     );
     add(
       TapArea(
-        position: Vector2.zero(),
+        position: -(game.worldSize / 2),
         size: game.worldSize,
         callback: () => emit(OnBackgroundTapped()),
       ),
@@ -60,20 +60,28 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
     )) {
       addWorld(world);
     }
-    // --- Starting World Color ---
+    // --- Starting World Settings ---
     gameWorlds['W1']!.setColor(Colors.green);
-    gameWorlds['W1']!.setMageCount(10);
+    gameWorlds['W1']!.setMageCount(12);
 
     // --- Draw World Boundaries
     add(WorldBoundary(game.worldSize, worldBoundaryPadding));
 
     // --- HUD ---
     game.camera.viewport.add(Hud());
+
+    // --- Set initial camera position ---
+    game.camera.viewfinder.position = gameWorlds['W1']!.position;
   }
 
   void emit(GameEvent event) {
     if (event is OnWorldTap) {
       if (highlightedWorld == event.worldName) {
+        highlightedWorld = null;
+        return;
+      }
+      if (highlightedWorld != null) {
+        _moveMage(from: highlightedWorld!, to: event.worldName);
         highlightedWorld = null;
         return;
       }
@@ -85,6 +93,14 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
       return;
     }
     return;
+  }
+
+  void _moveMage({required String from, required String to}) {
+    if (gameWorlds[from]!.connectedWorlds.contains(to) &&
+        gameWorlds[from]!.mageCount > 0) {
+      final count = gameWorlds[from]!.decrementMages();
+      gameWorlds[to]!.incrementMages(count);
+    }
   }
 
   @override
