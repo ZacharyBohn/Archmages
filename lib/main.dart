@@ -23,7 +23,7 @@ class RTSGame extends PannableGame<RTSWorld> {
 
 class RTSWorld extends World with HasGameReference<RTSGame> {
   // game world name -> game world component
-  Map<String, PositionComponent> gameWorlds = {};
+  Map<String, GameWorldComponent> gameWorlds = {};
   // sorted(world1.name, world2.name) -> Component
   Map<String, PositionComponent> connections = {};
 
@@ -49,6 +49,9 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
     )) {
       addWorld(world);
     }
+    // --- Starting World Color ---
+    gameWorlds['W1']!.setColor(Colors.green);
+    gameWorlds['W1']!.setMageCount(10);
 
     // --- Draw World Boundaries
     add(WorldBoundary(game.worldSize, worldBoundaryPadding));
