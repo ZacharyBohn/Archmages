@@ -1,10 +1,14 @@
+import 'package:archmage_rts/game_events.dart';
 import 'package:archmage_rts/mage_component.dart';
+import 'package:archmage_rts/main.dart';
 import 'package:flame/components.dart';
+import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
 
 import 'game_world.dart';
 
-class GameWorldComponent extends CircleComponent {
+class GameWorldComponent extends CircleComponent
+    with TapCallbacks, HasGameReference<RTSGame> {
   GameWorldComponent({
     required GameWorld gameWorld,
     Color color = Colors.green,
@@ -25,6 +29,7 @@ class GameWorldComponent extends CircleComponent {
   GameWorld _gameWorld;
   late TextComponent label;
   PositionComponent? mageCounter;
+  bool highlighted = false;
 
   void setMageCount(int count) {
     _gameWorld.mageCount = count;
@@ -32,6 +37,19 @@ class GameWorldComponent extends CircleComponent {
 
   @override
   void update(double dt) {
+    _updateMageCounter();
+    _updateHighlightedStatus();
+  }
+
+  _updateHighlightedStatus() {
+    if (game.world.highlightedWorld == _gameWorld.name) {
+      highlighted = true;
+    } else {
+      highlighted = false;
+    }
+  }
+
+  _updateMageCounter() {
     if (_gameWorld.mageCount > 0 && mageCounter == null) {
       final padding = 10;
       mageCounter = MageComponent(
@@ -45,7 +63,12 @@ class GameWorldComponent extends CircleComponent {
       mageCounter = null;
       remove(mageCounter!);
     }
-    return;
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    game.world.emit(OnWorldTap(_gameWorld.name));
+    super.onTapDown(event);
   }
 
   @override
@@ -65,5 +88,17 @@ class GameWorldComponent extends CircleComponent {
     );
     add(label);
     return;
+  }
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+    if (highlighted) {
+      final borderPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = Colors.purpleAccent;
+      canvas.drawCircle(Offset(radius, radius), radius + 1, borderPaint);
+    }
   }
 }

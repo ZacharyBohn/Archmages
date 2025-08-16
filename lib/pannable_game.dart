@@ -5,7 +5,7 @@ import 'package:flame/input.dart';
 import 'package:flame/game.dart';
 
 class PannableGame<T extends World> extends FlameGame<T>
-    with ScrollDetector, MultiTouchTapDetector, ScaleDetector {
+    with ScrollDetector, ScaleDetector {
   PannableGame({
     required super.world,
     required this.worldSize,
@@ -21,10 +21,8 @@ class PannableGame<T extends World> extends FlameGame<T>
   static const double _panFriction = 2.5;
   final Vector2 worldSize;
 
-  @override
-  void onTap(int pointerId) {
+  void stopPanning() {
     _panVelocity = Vector2.zero();
-    super.onTap(pointerId);
   }
 
   @override
