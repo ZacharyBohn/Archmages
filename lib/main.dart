@@ -1,5 +1,6 @@
 import 'package:archmage_rts/background_noise.dart';
 import 'package:archmage_rts/game_world_component.dart';
+import 'package:archmage_rts/tap_area.dart';
 import 'package:archmage_rts/world_boundary.dart';
 import 'package:flame/components.dart';
 import 'package:flame/extensions.dart';
@@ -7,6 +8,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 import 'package:archmage_rts/pannable_game.dart';
+import 'game_events.dart';
 import 'game_world.dart';
 import 'generate_worlds.dart';
 import 'hud.dart';
@@ -23,9 +25,11 @@ class RTSGame extends PannableGame<RTSWorld> {
 
 class RTSWorld extends World with HasGameReference<RTSGame> {
   // game world name -> game world component
-  Map<String, PositionComponent> gameWorlds = {};
+  Map<String, GameWorldComponent> gameWorlds = {};
   // sorted(world1.name, world2.name) -> Component
   Map<String, PositionComponent> connections = {};
+
+  String? highlightedWorld;
 
   final worldBoundaryPadding = 300.0;
 
@@ -35,6 +39,13 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
       await generateBackgroundNoise(
         Size(game.worldSize.x, game.worldSize.y),
         worldBoundaryPadding,
+      ),
+    );
+    add(
+      TapArea(
+        position: -(game.worldSize / 2),
+        size: game.worldSize,
+        callback: () => emit(OnBackgroundTapped()),
       ),
     );
     // --- Worlds ---
@@ -49,12 +60,47 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
     )) {
       addWorld(world);
     }
+    // --- Starting World Settings ---
+    gameWorlds['W1']!.setColor(Colors.green);
+    gameWorlds['W1']!.setMageCount(12);
 
     // --- Draw World Boundaries
     add(WorldBoundary(game.worldSize, worldBoundaryPadding));
 
     // --- HUD ---
     game.camera.viewport.add(Hud());
+
+    // --- Set initial camera position ---
+    game.camera.viewfinder.position = gameWorlds['W1']!.position;
+  }
+
+  void emit(GameEvent event) {
+    if (event is OnWorldTap) {
+      if (highlightedWorld == event.worldName) {
+        highlightedWorld = null;
+        return;
+      }
+      if (highlightedWorld != null) {
+        _moveMage(from: highlightedWorld!, to: event.worldName);
+        highlightedWorld = null;
+        return;
+      }
+      highlightedWorld = event.worldName;
+      return;
+    }
+    if (event is OnBackgroundTapped) {
+      game.stopPanning();
+      return;
+    }
+    return;
+  }
+
+  void _moveMage({required String from, required String to}) {
+    if (gameWorlds[from]!.connectedWorlds.contains(to) &&
+        gameWorlds[from]!.mageCount > 0) {
+      final count = gameWorlds[from]!.decrementMages();
+      gameWorlds[to]!.incrementMages(count);
+    }
   }
 
   @override
@@ -64,6 +110,7 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
     //
     // use += to zoom in
     // game.camera.viewfinder.zoom -= dt;
+    // print(highlightedWorld);
     return;
   }
 
