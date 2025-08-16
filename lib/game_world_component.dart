@@ -86,7 +86,7 @@ class GameWorldComponent extends CircleComponent
         color: Colors.purple,
         number: _gameWorld.mageCount,
         position: Vector2(size.x + padding, 0),
-        side: 40,
+        size: Vector2.all(40),
       );
       add(mageCounter!);
     }

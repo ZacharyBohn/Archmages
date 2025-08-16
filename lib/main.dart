@@ -81,6 +81,7 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
         return;
       }
       if (highlightedWorld != null) {
+        // TODO: animate moving mages
         _moveMage(from: highlightedWorld!, to: event.worldName);
         highlightedWorld = null;
         return;

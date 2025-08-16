@@ -4,6 +4,7 @@ import 'package:flame/extensions.dart';
 import 'package:flame/input.dart';
 import 'package:flame/game.dart';
 
+// TODO: fix panning on web for trackpad
 class PannableGame<T extends World> extends FlameGame<T>
     with ScrollDetector, ScaleDetector {
   PannableGame({
