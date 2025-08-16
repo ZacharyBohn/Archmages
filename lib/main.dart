@@ -18,16 +18,16 @@ void main() {
 
 class RTSGame extends PannableGame<RTSWorld> {
   RTSGame({required super.world})
-    : super(backgroundColor: Color(0xFF111111), worldSize: Vector2(5000, 5000));
+    : super(backgroundColor: Color(0xFF111111), worldSize: Vector2(8000, 5000));
 }
 
 class RTSWorld extends World with HasGameReference<RTSGame> {
-  // sorted(world1.name, world2.name) -> Component
-  Map<String, PositionComponent> connections = {};
   // game world name -> game world component
   Map<String, PositionComponent> gameWorlds = {};
+  // sorted(world1.name, world2.name) -> Component
+  Map<String, PositionComponent> connections = {};
 
-  final worldBoundaryPadding = 100.0;
+  final worldBoundaryPadding = 300.0;
 
   @override
   Future<void> onLoad() async {
@@ -42,8 +42,10 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
       minDistance: 150.0,
       mapSize: game.worldSize,
       worldCount: 80,
-      maxDistance: 350.0,
-      maxConnections: 4,
+      maxDistance: 700.0,
+      maxConnections: 6,
+      worldSize: 45.0,
+      worldColorOverride: Color(0xFF505050),
     )) {
       addWorld(world);
     }

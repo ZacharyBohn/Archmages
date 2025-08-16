@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui' show Color;
 
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart' show Colors;
@@ -11,6 +12,8 @@ List<GameWorld> generateWorlds({
   required Vector2 mapSize,
   required int worldCount,
   required int maxConnections,
+  Color? worldColorOverride,
+  double worldSize = 30.0,
   double minConnectionAngle = 15.0,
   bool ensureConnected = true,
 }) {
@@ -41,9 +44,10 @@ List<GameWorld> generateWorlds({
     if (!tooClose) {
       final newWorld = GameWorld(
         'W${worlds.length + 1}',
-        30, // default radius
+        worldSize,
         newPosition,
-        Colors.primaries[random.nextInt(Colors.primaries.length)],
+        worldColorOverride ??
+            Colors.primaries[random.nextInt(Colors.primaries.length)],
         connectedWorlds: [],
       );
       worlds.add(newWorld);
@@ -59,10 +63,17 @@ List<GameWorld> generateWorlds({
   for (final world in worlds) {
     final otherWorlds = worlds
         .where((w) => w != world)
-        .map((w) => {'world': w, 'distance': world.position.distanceTo(w.position)})
+        .map(
+          (w) => {
+            'world': w,
+            'distance': world.position.distanceTo(w.position),
+          },
+        )
         .toList();
 
-    otherWorlds.sort((a, b) => (a['distance'] as double).compareTo(b['distance'] as double));
+    otherWorlds.sort(
+      (a, b) => (a['distance'] as double).compareTo(b['distance'] as double),
+    );
 
     for (var i = 0; i < otherWorlds.length; i++) {
       if (world.connectedWorlds.length >= maxConnections) {
@@ -87,7 +98,9 @@ List<GameWorld> generateWorlds({
 
       bool angleIsOk = true;
       for (final connectedNeighborName in world.connectedWorlds) {
-        final connectedNeighbor = worlds.firstWhere((w) => w.name == connectedNeighborName);
+        final connectedNeighbor = worlds.firstWhere(
+          (w) => w.name == connectedNeighborName,
+        );
         final angleToConnectedNeighbor = atan2(
           connectedNeighbor.position.y - world.position.y,
           connectedNeighbor.position.x - world.position.x,
@@ -106,32 +119,35 @@ List<GameWorld> generateWorlds({
 
       if (angleIsOk) {
         final angleToWorld = atan2(
-            world.position.y - neighbor.position.y,
-            world.position.x - neighbor.position.x
+          world.position.y - neighbor.position.y,
+          world.position.x - neighbor.position.x,
         );
 
         bool neighborAngleIsOk = true;
         for (final connectedNeighborName in neighbor.connectedWorlds) {
-            final connectedNeighbor = worlds.firstWhere((w) => w.name == connectedNeighborName);
-            final angleToConnectedNeighbor = atan2(
-                connectedNeighbor.position.y - neighbor.position.y,
-                connectedNeighbor.position.x - neighbor.position.x
-            );
+          final connectedNeighbor = worlds.firstWhere(
+            (w) => w.name == connectedNeighborName,
+          );
+          final angleToConnectedNeighbor = atan2(
+            connectedNeighbor.position.y - neighbor.position.y,
+            connectedNeighbor.position.x - neighbor.position.x,
+          );
 
-            var angleDiff = (angleToWorld - angleToConnectedNeighbor).abs();
-            if (angleDiff > pi) {
-                angleDiff = 2 * pi - angleDiff;
-            }
+          var angleDiff = (angleToWorld - angleToConnectedNeighbor).abs();
+          if (angleDiff > pi) {
+            angleDiff = 2 * pi - angleDiff;
+          }
 
-            if (angleDiff < minAngleRadians) {
-                neighborAngleIsOk = false;
-                break;
-            }
+          if (angleDiff < minAngleRadians) {
+            neighborAngleIsOk = false;
+            break;
+          }
         }
 
-        if (neighborAngleIsOk && neighbor.connectedWorlds.length < maxConnections) {
-            world.connectedWorlds.add(neighbor.name);
-            neighbor.connectedWorlds.add(world.name);
+        if (neighborAngleIsOk &&
+            neighbor.connectedWorlds.length < maxConnections) {
+          world.connectedWorlds.add(neighbor.name);
+          neighbor.connectedWorlds.add(world.name);
         }
       }
     }
@@ -150,7 +166,7 @@ List<GameWorld> generateWorlds({
         component.add(world);
 
         int head = 0;
-        while(head < queue.length) {
+        while (head < queue.length) {
           final current = queue[head++];
           for (final neighborName in current.connectedWorlds) {
             final neighbor = worlds.firstWhere((w) => w.name == neighborName);
@@ -178,7 +194,7 @@ List<GameWorld> generateWorlds({
         for (int j = i + 1; j < components.length; j++) {
           final currentComponentA = components[i];
           final currentComponentB = components[j];
-          
+
           for (final wa in currentComponentA) {
             for (final wb in currentComponentB) {
               final distance = wa.position.distanceTo(wb.position);
@@ -194,10 +210,13 @@ List<GameWorld> generateWorlds({
         }
       }
 
-      if (worldA != null && worldB != null && componentA != null && componentB != null) {
+      if (worldA != null &&
+          worldB != null &&
+          componentA != null &&
+          componentB != null) {
         worldA.connectedWorlds.add(worldB.name);
         worldB.connectedWorlds.add(worldA.name);
-        
+
         // Merge componentB into componentA
         componentA.addAll(componentB);
         components.remove(componentB);

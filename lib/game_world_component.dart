@@ -8,6 +8,7 @@ class GameWorldComponent extends CircleComponent {
     required this.name,
     required super.radius,
     required super.position,
+
     Color color = Colors.green,
     super.priority = 1,
     super.anchor = Anchor.center,
@@ -18,6 +19,7 @@ class GameWorldComponent extends CircleComponent {
       name: world.name,
       radius: world.size,
       position: world.position,
+      color: world.color,
     );
   }
 

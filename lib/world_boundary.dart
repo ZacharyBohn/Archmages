@@ -22,7 +22,7 @@ class WorldBoundary extends PositionComponent {
     final bottomLeft =
         Vector2(-(worldSize.x / 2), worldSize.y / 2) +
         Vector2(-padding, padding);
-    final color = Color(0xFF102050);
+    final color = Color(0xFF102525);
     add(LineComponent(start: topLeft, end: topRight, color: color));
     add(LineComponent(start: topRight, end: bottomRight, color: color));
     add(

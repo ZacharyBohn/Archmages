@@ -13,12 +13,13 @@ class PannableGame<T extends World> extends FlameGame<T>
   }) : _backgroundColor = backgroundColor ?? const Color(0xFFBBBBBB);
 
   final Color _backgroundColor;
-  final double minZoom = 0.4;
+  final double minZoom = 0.15;
   final double maxZoom = 5.0;
   late double _startZoom;
   Vector2 _panVelocity = Vector2.zero();
   final _panDecayStop = 7.0;
   static const double _panFriction = 2.5;
+  final Vector2 worldSize;
 
   @override
   void onTap(int pointerId) {
@@ -28,7 +29,6 @@ class PannableGame<T extends World> extends FlameGame<T>
 
   @override
   Color backgroundColor() => _backgroundColor;
-  final Vector2 worldSize;
 
   void _setZoom(double value) {
     camera.viewfinder.zoom = value.clamp(minZoom, maxZoom);
