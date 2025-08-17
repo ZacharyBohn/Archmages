@@ -24,33 +24,22 @@ class EventBus {
   final RTSGame game;
 
   void emit(GameEvent event) {
-    // TODO: move to handler
     if (event is OnWorldTap) {
-      if (game.dataStore.highlightedWorld == event.worldName) {
-        game.dataStore.highlightedWorld = null;
-        return;
-      }
-      if (game.dataStore.highlightedWorld != null) {
-        // TODO: animate moving mages
-        _moveMage(from: game.dataStore.highlightedWorld!, to: event.worldName);
-        game.dataStore.highlightedWorld = null;
-        return;
-      }
-      game.dataStore.highlightedWorld = event.worldName;
+      _handleWorldTap(event);
       return;
     }
-    // TODO: move to handler
     if (event is OnBackgroundTapped) {
-      game.stopPanning();
+      _handleOnBackgroundTapped();
       return;
     }
     if (event is OnGameTick) {
       _handleGameTick(event);
+      return;
     }
     if (event is OnGameStart) {
       _handleGameStart();
+      return;
     }
-    return;
   }
 
   Future<void> _handleGameStart() async {
@@ -98,6 +87,24 @@ class EventBus {
       repeat: true,
     );
     game.dataStore.mageGenerator.start();
+  }
+
+  void _handleOnBackgroundTapped() {
+    game.stopPanning();
+  }
+
+  void _handleWorldTap(OnWorldTap event) {
+    if (game.dataStore.highlightedWorld == event.worldName) {
+      game.dataStore.highlightedWorld = null;
+      return;
+    }
+    if (game.dataStore.highlightedWorld != null) {
+      // TODO: animate moving mages
+      _moveMage(from: game.dataStore.highlightedWorld!, to: event.worldName);
+      game.dataStore.highlightedWorld = null;
+      return;
+    }
+    game.dataStore.highlightedWorld = event.worldName;
     return;
   }
 
