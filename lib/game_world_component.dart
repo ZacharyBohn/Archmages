@@ -69,7 +69,7 @@ class GameWorldComponent extends CircleComponent
   }
 
   _updateHighlightedStatus() {
-    if (game.eventBus.highlightedWorld == _gameWorld.name) {
+    if (game.dataStore.highlightedWorld == _gameWorld.name) {
       highlighted = true;
     } else {
       highlighted = false;

@@ -19,10 +19,10 @@ class Hud extends PositionComponent with HasGameReference<RTSGame> {
 
   @override
   void update(double dt) {
-    if (game.eventBus.highlightedWorld == null) {
+    if (game.dataStore.highlightedWorld == null) {
       hudElement.text = 'Selected: None';
     } else {
-      hudElement.text = 'Selected: ${game.eventBus.highlightedWorld}';
+      hudElement.text = 'Selected: ${game.dataStore.highlightedWorld}';
     }
     return;
   }

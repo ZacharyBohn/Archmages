@@ -20,35 +20,23 @@ import 'tap_area.dart';
 /// This also serves as the game's data store.
 class EventBus {
   EventBus(this.game);
-  // game world name -> game world component
-  Map<String, GameWorldComponent> gameWorlds = {};
-  // sorted(world1.name, world2.name) -> Component
-  Map<String, PositionComponent> connections = {};
-  Set<MageComponent> travelingMages = {};
-
-  String? highlightedWorld;
 
   final RTSGame game;
-
-  // Only gonna be used temporarily =0
-  late final Timer mageGenerator;
-
-  final worldBoundaryPadding = 300.0;
 
   void emit(GameEvent event) {
     // TODO: move to handler
     if (event is OnWorldTap) {
-      if (highlightedWorld == event.worldName) {
-        highlightedWorld = null;
+      if (game.dataStore.highlightedWorld == event.worldName) {
+        game.dataStore.highlightedWorld = null;
         return;
       }
-      if (highlightedWorld != null) {
+      if (game.dataStore.highlightedWorld != null) {
         // TODO: animate moving mages
-        _moveMage(from: highlightedWorld!, to: event.worldName);
-        highlightedWorld = null;
+        _moveMage(from: game.dataStore.highlightedWorld!, to: event.worldName);
+        game.dataStore.highlightedWorld = null;
         return;
       }
-      highlightedWorld = event.worldName;
+      game.dataStore.highlightedWorld = event.worldName;
       return;
     }
     // TODO: move to handler
@@ -69,7 +57,7 @@ class EventBus {
     game.world.add(
       await generateBackgroundNoise(
         Size(game.worldSize.x, game.worldSize.y),
-        worldBoundaryPadding,
+        game.dataStore.worldBoundaryPadding,
       ),
     );
     game.world.add(
@@ -92,35 +80,35 @@ class EventBus {
       _addWorld(world);
     }
     // --- Starting World Settings ---
-    gameWorlds['W1']!.setColor(Colors.green);
-    gameWorlds['W1']!.setMageCount(12);
+    game.dataStore.gameWorlds['W1']!.setColor(Colors.green);
+    game.dataStore.gameWorlds['W1']!.setMageCount(12);
 
     // --- HUD ---
     game.camera.viewport.add(Hud());
 
     // --- Set initial camera position ---
-    game.camera.viewfinder.position = gameWorlds['W1']!.position;
+    game.camera.viewfinder.position = game.dataStore.gameWorlds['W1']!.position;
 
     // --- Mage Generator ---
-    mageGenerator = Timer(
+    game.dataStore.mageGenerator = Timer(
       3,
       onTick: () {
-        gameWorlds['W1']?.incrementMages(1);
+        game.dataStore.gameWorlds['W1']?.incrementMages(1);
       },
       repeat: true,
     );
-    mageGenerator.start();
+    game.dataStore.mageGenerator.start();
     return;
   }
 
   void _handleGameTick(OnGameTick event) {
-    mageGenerator.update(event.dt);
+    game.dataStore.mageGenerator.update(event.dt);
     return;
   }
 
   void _moveMage({required String from, required String to}) {
-    final fromWorld = gameWorlds[from]!;
-    final toWorld = gameWorlds[to]!;
+    final fromWorld = game.dataStore.gameWorlds[from]!;
+    final toWorld = game.dataStore.gameWorlds[to]!;
     if (fromWorld.connectedWorlds.contains(to) && fromWorld.mageCount > 0) {
       final count = fromWorld.decrementMages();
       if (count > 0) {
@@ -150,14 +138,14 @@ class EventBus {
 
   void _addWorld(GameWorld world) {
     final component = GameWorldComponent.from(world);
-    gameWorlds[world.name] = component;
+    game.dataStore.gameWorlds[world.name] = component;
     for (final connectedWorldName in world.connectedWorlds) {
       final connection = ([connectedWorldName, world.name]..sort()).toString();
-      if (connections.keys.contains(connection)) {
+      if (game.dataStore.connections.keys.contains(connection)) {
         continue;
       }
 
-      final connectedWorld = gameWorlds[connectedWorldName];
+      final connectedWorld = game.dataStore.gameWorlds[connectedWorldName];
       if (connectedWorld == null) {
         continue;
       }
@@ -167,7 +155,7 @@ class EventBus {
         end: connectedWorld.position,
       );
       line.priority = 0;
-      connections[connection] = line;
+      game.dataStore.connections[connection] = line;
       game.world.add(line);
     }
     game.world.add(component);
