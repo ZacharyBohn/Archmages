@@ -17,7 +17,7 @@ class PannableGame<T extends World> extends FlameGame<T>
   final double minZoom = 0.15;
   final double maxZoom = 5.0;
   late double _startZoom;
-  Vector2 _panVelocity = Vector2.zero();
+  late Vector2 _panVelocity;
   final _panDecayStop = 7.0;
   static const double _panFriction = 2.5;
   final Vector2 worldSize;
