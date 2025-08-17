@@ -1,20 +1,11 @@
-import 'package:archmage_rts/background_noise.dart';
-import 'package:archmage_rts/game_world_component.dart';
-import 'package:archmage_rts/mage_component.dart';
-import 'package:archmage_rts/tap_area.dart';
-import 'package:archmage_rts/world_boundary.dart';
+import 'package:archmage_rts/event_bus.dart';
 import 'package:flame/components.dart';
-import 'package:flame/effects.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 import 'package:archmage_rts/pannable_game.dart';
 import 'game_events.dart';
-import 'game_world.dart';
-import 'generate_worlds.dart';
-import 'hud.dart';
-import 'line_component.dart';
 
 void main() {
   runApp(GameWidget(game: RTSGame(world: RTSWorld())));
@@ -22,130 +13,95 @@ void main() {
 
 class RTSGame extends PannableGame<RTSWorld> {
   RTSGame({required super.world})
-    : super(backgroundColor: Color(0xFF111111), worldSize: Vector2(8000, 5000));
+    : super(
+        backgroundColor: Color(0xFF111111),
+        worldSize: Vector2(8000, 5000),
+      ) {
+    eventBus = EventBus(this);
+  }
+
+  late final EventBus eventBus;
 }
 
 class RTSWorld extends World with HasGameReference<RTSGame> {
-  // game world name -> game world component
-  Map<String, GameWorldComponent> gameWorlds = {};
-  // sorted(world1.name, world2.name) -> Component
-  Map<String, PositionComponent> connections = {};
-  Set<MageComponent> travelingMages = {};
+  // // game world name -> game world component
+  // Map<String, GameWorldComponent> gameWorlds = {};
+  // // sorted(world1.name, world2.name) -> Component
+  // Map<String, PositionComponent> connections = {};
+  // Set<MageComponent> travelingMages = {};
 
-  String? highlightedWorld;
+  // String? highlightedWorld;
 
-  final worldBoundaryPadding = 300.0;
+  // final worldBoundaryPadding = 300.0;
 
-  late final Timer mageGenerator;
+  // late final Timer mageGenerator;
+  // late final EventBus eventBus;
 
   @override
   Future<void> onLoad() async {
-    add(
-      await generateBackgroundNoise(
-        Size(game.worldSize.x, game.worldSize.y),
-        worldBoundaryPadding,
-      ),
-    );
-    add(
-      TapArea(
-        position: -(game.worldSize / 2),
-        size: game.worldSize,
-        callback: () => emit(OnBackgroundTapped()),
-      ),
-    );
-    // --- Worlds ---
-    for (final world in generateWorlds(
-      minDistance: 150.0,
-      mapSize: game.worldSize,
-      worldCount: 80,
-      maxDistance: 700.0,
-      maxConnections: 6,
-      worldSize: 45.0,
-      worldColorOverride: Color(0xFF505050),
-    )) {
-      addWorld(world);
-    }
-    // --- Starting World Settings ---
-    gameWorlds['W1']!.setColor(Colors.green);
-    gameWorlds['W1']!.setMageCount(12);
-
-    // --- Draw World Boundaries
-    add(WorldBoundary(game.worldSize, worldBoundaryPadding));
-
-    // --- HUD ---
-    game.camera.viewport.add(Hud());
-
-    // --- Set initial camera position ---
-    game.camera.viewfinder.position = gameWorlds['W1']!.position;
-
-    // --- Mage Generator ---
-    mageGenerator = Timer(
-      3,
-      onTick: () {
-        gameWorlds['W1']?.incrementMages(1);
-      },
-      repeat: true,
-    );
-    mageGenerator.start();
+    // game.eventBus = EventBus(game);
+    game.eventBus.emit(OnGameStart());
   }
 
-  void emit(GameEvent event) {
-    if (event is OnWorldTap) {
-      if (highlightedWorld == event.worldName) {
-        highlightedWorld = null;
-        return;
-      }
-      if (highlightedWorld != null) {
-        // TODO: animate moving mages
-        _moveMage(from: highlightedWorld!, to: event.worldName);
-        highlightedWorld = null;
-        return;
-      }
-      highlightedWorld = event.worldName;
-      return;
-    }
-    if (event is OnBackgroundTapped) {
-      game.stopPanning();
-      return;
-    }
-    return;
-  }
+  // void emit(GameEvent event) {
+  //   if (event is OnWorldTap) {
+  //     if (highlightedWorld == event.worldName) {
+  //       highlightedWorld = null;
+  //       return;
+  //     }
+  //     if (highlightedWorld != null) {
+  //       // TODO: animate moving mages
+  //       _moveMage(from: highlightedWorld!, to: event.worldName);
+  //       highlightedWorld = null;
+  //       return;
+  //     }
+  //     highlightedWorld = event.worldName;
+  //     return;
+  //   }
+  //   if (event is OnBackgroundTapped) {
+  //     game.stopPanning();
+  //     return;
+  //   }
+  //   return;
+  // }
 
-  void _moveMage({required String from, required String to}) {
-    final fromWorld = gameWorlds[from]!;
-    final toWorld = gameWorlds[to]!;
-    if (fromWorld.connectedWorlds.contains(to) && fromWorld.mageCount > 0) {
-      final count = fromWorld.decrementMages();
-      if (count > 0) {
-        final mage = MageComponent(number: count, size: Vector2.all(20));
-        mage.anchor = Anchor.center;
+  // void _moveMage({required String from, required String to}) {
+  //   final fromWorld = gameWorlds[from]!;
+  //   final toWorld = gameWorlds[to]!;
+  //   if (fromWorld.connectedWorlds.contains(to) && fromWorld.mageCount > 0) {
+  //     final count = fromWorld.decrementMages();
+  //     if (count > 0) {
+  //       final mage = MageComponent(number: count, size: Vector2.all(20));
+  //       mage.anchor = Anchor.center;
 
-        // Calculate the vector from the 'from' world to the 'to' world
-        final direction = (toWorld.position - fromWorld.position).normalized();
+  //       final direction = (toWorld.position - fromWorld.position).normalized();
 
-        // Calculate the start and end positions
-        final startPosition = fromWorld.position + direction * fromWorld.radius;
-        final endPosition = toWorld.position - direction * toWorld.radius;
+  //       final startPosition = fromWorld.position + direction * fromWorld.radius;
+  //       final endPosition = toWorld.position - direction * toWorld.radius;
 
-        mage.position = startPosition;
-        mage.add(
-          MoveToEffect(
-            endPosition,
-            EffectController(speed: 150),
-            onComplete: () {
-              toWorld.incrementMages(count);
-              mage.removeFromParent();
-            },
-          ),
-        );
-        add(mage);
-      }
-    }
-  }
+  //       mage.position = startPosition;
+  //       mage.add(
+  //         MoveToEffect(
+  //           endPosition,
+  //           EffectController(speed: 150),
+  //           onComplete: () {
+  //             toWorld.incrementMages(count);
+  //             mage.removeFromParent();
+  //           },
+  //         ),
+  //       );
+  //       add(mage);
+  //     }
+  //   }
+  // }
 
   @override
   void update(double dt) {
-    mageGenerator.update(dt);
+    if (!isMounted) {
+      return;
+    }
+    game.eventBus.emit(OnGameTick(dt));
+    // mageGenerator.update(dt);
     // cannot be less than 0
     // this zooms out
     //
@@ -157,29 +113,29 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
 
   /// Adds the game world to the FlameWorld
   /// And draws any connections. Connections are guarenteed
-  /// to be drawn only once.
-  void addWorld(GameWorld world) {
-    final component = GameWorldComponent.from(world);
-    gameWorlds[world.name] = component;
-    for (final connectedWorldName in world.connectedWorlds) {
-      final connection = ([connectedWorldName, world.name]..sort()).toString();
-      if (connections.keys.contains(connection)) {
-        continue;
-      }
+  // /// to be drawn only once.
+  // void addWorld(GameWorld world) {
+  //   final component = GameWorldComponent.from(world);
+  //   gameWorlds[world.name] = component;
+  //   for (final connectedWorldName in world.connectedWorlds) {
+  //     final connection = ([connectedWorldName, world.name]..sort()).toString();
+  //     if (connections.keys.contains(connection)) {
+  //       continue;
+  //     }
 
-      final connectedWorld = gameWorlds[connectedWorldName];
-      if (connectedWorld == null) {
-        continue;
-      }
+  //     final connectedWorld = gameWorlds[connectedWorldName];
+  //     if (connectedWorld == null) {
+  //       continue;
+  //     }
 
-      final line = LineComponent(
-        start: world.position,
-        end: connectedWorld.position,
-      );
-      line.priority = 0;
-      connections[connection] = line;
-      add(line);
-    }
-    add(component);
-  }
+  //     final line = LineComponent(
+  //       start: world.position,
+  //       end: connectedWorld.position,
+  //     );
+  //     line.priority = 0;
+  //     connections[connection] = line;
+  //     add(line);
+  //   }
+  //   add(component);
+  // }
 }

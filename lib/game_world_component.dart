@@ -69,7 +69,7 @@ class GameWorldComponent extends CircleComponent
   }
 
   _updateHighlightedStatus() {
-    if (game.world.highlightedWorld == _gameWorld.name) {
+    if (game.eventBus.highlightedWorld == _gameWorld.name) {
       highlighted = true;
     } else {
       highlighted = false;
@@ -97,7 +97,7 @@ class GameWorldComponent extends CircleComponent
 
   @override
   void onTapDown(TapDownEvent event) {
-    game.world.emit(OnWorldTap(_gameWorld.name));
+    game.eventBus.emit(OnWorldTap(_gameWorld.name));
     super.onTapDown(event);
   }
 
