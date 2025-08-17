@@ -17,7 +17,7 @@ class PannableGame<T extends World> extends FlameGame<T>
   final double minZoom = 0.15;
   final double maxZoom = 5.0;
   late double _startZoom;
-  late Vector2 _panVelocity;
+  Vector2 _panVelocity = Vector2.zero();
   final _panDecayStop = 7.0;
   static const double _panFriction = 2.5;
   final Vector2 worldSize;
@@ -35,7 +35,10 @@ class PannableGame<T extends World> extends FlameGame<T>
 
   @override
   void onScroll(PointerScrollInfo info) {
-    final delta = info.scrollDelta.global.y > 0 ? 0.1 : -0.1;
+    // Passing in global.y will kinda fix trackpad
+    // super zooming
+    final scrollingUp = info.scrollDelta.global.y > 0;
+    final delta = scrollingUp ? 0.1 : -0.1;
     _setZoom(camera.viewfinder.zoom + delta);
     _clampCamera();
   }

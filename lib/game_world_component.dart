@@ -83,7 +83,6 @@ class GameWorldComponent extends CircleComponent
     if (_gameWorld.mageCount > 0 && mageCounter == null) {
       final padding = 10;
       mageCounter = MageComponent(
-        color: Colors.purple,
         number: _gameWorld.mageCount,
         position: Vector2(size.x + padding, 0),
         size: Vector2.all(40),

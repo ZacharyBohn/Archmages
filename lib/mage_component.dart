@@ -2,19 +2,18 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
 class MageComponent extends SpriteComponent {
-  final Color color;
   final int number;
-  final double padding; // gap between triangle and text
-
+  final double padding;
   late final TextComponent _text;
+  Vector2 velocity;
 
   MageComponent({
-    required this.color,
     required this.number,
     this.padding = 6,
+    Vector2? velocity,
     super.position,
     super.size,
-  });
+  }) : this.velocity = velocity ?? Vector2.zero();
 
   @override
   Future<void> onLoad() async {

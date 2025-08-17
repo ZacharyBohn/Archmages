@@ -1,8 +1,10 @@
 import 'package:archmage_rts/background_noise.dart';
 import 'package:archmage_rts/game_world_component.dart';
+import 'package:archmage_rts/mage_component.dart';
 import 'package:archmage_rts/tap_area.dart';
 import 'package:archmage_rts/world_boundary.dart';
 import 'package:flame/components.dart';
+import 'package:flame/effects.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
@@ -28,10 +30,13 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
   Map<String, GameWorldComponent> gameWorlds = {};
   // sorted(world1.name, world2.name) -> Component
   Map<String, PositionComponent> connections = {};
+  Set<MageComponent> travelingMages = {};
 
   String? highlightedWorld;
 
   final worldBoundaryPadding = 300.0;
+
+  late final Timer mageGenerator;
 
   @override
   Future<void> onLoad() async {
@@ -72,6 +77,16 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
 
     // --- Set initial camera position ---
     game.camera.viewfinder.position = gameWorlds['W1']!.position;
+
+    // --- Mage Generator ---
+    mageGenerator = Timer(
+      3,
+      onTick: () {
+        gameWorlds['W1']?.incrementMages(1);
+      },
+      repeat: true,
+    );
+    mageGenerator.start();
   }
 
   void emit(GameEvent event) {
@@ -97,15 +112,40 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
   }
 
   void _moveMage({required String from, required String to}) {
-    if (gameWorlds[from]!.connectedWorlds.contains(to) &&
-        gameWorlds[from]!.mageCount > 0) {
-      final count = gameWorlds[from]!.decrementMages();
-      gameWorlds[to]!.incrementMages(count);
+    final fromWorld = gameWorlds[from]!;
+    final toWorld = gameWorlds[to]!;
+    if (fromWorld.connectedWorlds.contains(to) && fromWorld.mageCount > 0) {
+      final count = fromWorld.decrementMages();
+      if (count > 0) {
+        final mage = MageComponent(number: count, size: Vector2.all(20));
+        mage.anchor = Anchor.center;
+
+        // Calculate the vector from the 'from' world to the 'to' world
+        final direction = (toWorld.position - fromWorld.position).normalized();
+
+        // Calculate the start and end positions
+        final startPosition = fromWorld.position + direction * fromWorld.radius;
+        final endPosition = toWorld.position - direction * toWorld.radius;
+
+        mage.position = startPosition;
+        mage.add(
+          MoveToEffect(
+            endPosition,
+            EffectController(speed: 150),
+            onComplete: () {
+              toWorld.incrementMages(count);
+              mage.removeFromParent();
+            },
+          ),
+        );
+        add(mage);
+      }
     }
   }
 
   @override
   void update(double dt) {
+    mageGenerator.update(dt);
     // cannot be less than 0
     // this zooms out
     //
