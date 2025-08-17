@@ -16,8 +16,6 @@ import 'tap_area.dart';
 /// Accepts all events and handles them.
 /// Basically this is the core for all game logic
 /// besides what is able to be handled in-component.
-///
-/// This also serves as the game's data store.
 class EventBus {
   EventBus(this.game);
 
