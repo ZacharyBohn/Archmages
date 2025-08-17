@@ -1,8 +1,15 @@
 abstract class GameEvent {}
 
+class OnGameStart extends GameEvent {}
+
 class OnWorldTap extends GameEvent {
   OnWorldTap(this.worldName);
   String worldName;
 }
 
 class OnBackgroundTapped extends GameEvent {}
+
+class OnGameTick extends GameEvent {
+  OnGameTick(this.dt);
+  final double dt;
+}

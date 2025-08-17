@@ -69,7 +69,7 @@ class GameWorldComponent extends CircleComponent
   }
 
   _updateHighlightedStatus() {
-    if (game.world.highlightedWorld == _gameWorld.name) {
+    if (game.dataStore.highlightedWorld == _gameWorld.name) {
       highlighted = true;
     } else {
       highlighted = false;
@@ -83,10 +83,9 @@ class GameWorldComponent extends CircleComponent
     if (_gameWorld.mageCount > 0 && mageCounter == null) {
       final padding = 10;
       mageCounter = MageComponent(
-        color: Colors.purple,
         number: _gameWorld.mageCount,
         position: Vector2(size.x + padding, 0),
-        side: 40,
+        size: Vector2.all(40),
       );
       add(mageCounter!);
     }
@@ -98,7 +97,7 @@ class GameWorldComponent extends CircleComponent
 
   @override
   void onTapDown(TapDownEvent event) {
-    game.world.emit(OnWorldTap(_gameWorld.name));
+    game.eventBus.emit(OnWorldTap(_gameWorld.name));
     super.onTapDown(event);
   }
 

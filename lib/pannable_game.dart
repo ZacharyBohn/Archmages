@@ -4,6 +4,7 @@ import 'package:flame/extensions.dart';
 import 'package:flame/input.dart';
 import 'package:flame/game.dart';
 
+// TODO: fix panning on web for trackpad
 class PannableGame<T extends World> extends FlameGame<T>
     with ScrollDetector, ScaleDetector {
   PannableGame({
@@ -34,7 +35,10 @@ class PannableGame<T extends World> extends FlameGame<T>
 
   @override
   void onScroll(PointerScrollInfo info) {
-    final delta = info.scrollDelta.global.y > 0 ? 0.1 : -0.1;
+    // Passing in global.y will kinda fix trackpad
+    // super zooming
+    final scrollingUp = info.scrollDelta.global.y > 0;
+    final delta = scrollingUp ? 0.1 : -0.1;
     _setZoom(camera.viewfinder.zoom + delta);
     _clampCamera();
   }
