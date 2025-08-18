@@ -85,15 +85,7 @@ class EventBus {
     // --- Mage Generator ---
     game.dataStore.mageGenerator = Timer(
       3,
-      onTick: () {
-        for (final world in game.dataStore.gameWorlds.values) {
-          if (world.goodMageCount > 0 && world.evilMageCount == 0) {
-            world.incrementMages(1);
-          } else if (world.evilMageCount > 0 && world.goodMageCount == 0) {
-            world.setEvilMageCount(world.evilMageCount + 1);
-          }
-        }
-      },
+      onTick: _handleMageGeneratorTick,
       repeat: true,
     );
     game.dataStore.mageGenerator.start();
@@ -106,6 +98,20 @@ class EventBus {
       repeat: true,
     );
     game.dataStore.evilMageAI.start();
+  }
+
+  void _handleMageGeneratorTick() {
+    for (final world in game.dataStore.gameWorlds.values) {
+      if (world.goodMageCount > 0 &&
+          world.evilMageCount == 0 &&
+          world.goodMageCount < game.dataStore.maxWorldPopulation) {
+        world.incrementMages(1);
+      } else if (world.evilMageCount > 0 &&
+          world.goodMageCount == 0 &&
+          world.evilMageCount < game.dataStore.maxWorldPopulation) {
+        world.setEvilMageCount(world.evilMageCount + 1);
+      }
+    }
   }
 
   void _handleOnBackgroundTapped() {
@@ -123,7 +129,7 @@ class EventBus {
         to: event.worldName,
         moveMultiple: event.isLongPress,
       );
-      game.dataStore.highlightedWorld = null;
+      // game.dataStore.highlightedWorld = null;
       return;
     }
     game.dataStore.highlightedWorld = event.worldName;

@@ -36,6 +36,7 @@ class GameWorldComponent extends CircleComponent
   bool highlighted = false;
   DateTime? _tapDownTime;
   bool _isLongPress = false;
+  final longPressDelay = const Duration(milliseconds: 200);
 
   String get name => _gameWorld.name;
 
@@ -165,7 +166,7 @@ class GameWorldComponent extends CircleComponent
   void onTapUp(TapUpEvent event) {
     if (_tapDownTime != null) {
       final tapDuration = DateTime.now().difference(_tapDownTime!);
-      if (tapDuration >= const Duration(milliseconds: 400)) {
+      if (tapDuration >= longPressDelay) {
         _isLongPress = true;
       }
     }

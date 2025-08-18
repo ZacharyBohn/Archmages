@@ -23,4 +23,6 @@ class DataStore {
   final defaultWorldColor = Color(0xFF505050);
   final goodWorldColor = Colors.green;
   final evilWorldColor = Colors.red;
+
+  final maxWorldPopulation = 36;
 }
