@@ -41,10 +41,12 @@ class GameWorldComponent extends CircleComponent
 
   void setMageCount(int count) {
     _gameWorld.goodMageCount = count;
+    _updateWorldColor();
   }
 
   void setEvilMageCount(int count) {
     _gameWorld.evilMageCount = count;
+    _updateWorldColor();
   }
 
   int decrementMages() {
@@ -52,10 +54,7 @@ class GameWorldComponent extends CircleComponent
     // maybe make this more than 1 optional
     if (_gameWorld.goodMageCount > 0) {
       _gameWorld.goodMageCount -= 1;
-      if (_gameWorld.goodMageCount == 0) {
-        _gameWorld.color = game.dataStore.defaultWorldColor;
-        setColor(game.dataStore.defaultWorldColor);
-      }
+      _updateWorldColor();
       return 1;
     }
     return 0;
@@ -66,17 +65,20 @@ class GameWorldComponent extends CircleComponent
       return;
     }
     _gameWorld.goodMageCount += count;
-    _gameWorld.color = Colors.green;
-    setColor(Colors.green);
+    _updateWorldColor();
   }
 
   @override
   void update(double dt) {
     super.update(dt);
-    _updateMageCounter();
+    if (!isMounted) {
+      return;
+    }
+    _updateGoodMageCounter();
     _updateEvilMageCounter();
     _updateHighlightedStatus();
     _handleFighting(dt);
+    _updateWorldColor();
   }
 
   void _handleFighting(double dt) {
@@ -90,6 +92,16 @@ class GameWorldComponent extends CircleComponent
     }
   }
 
+  void _updateWorldColor() {
+    if (_gameWorld.evilMageCount > _gameWorld.goodMageCount) {
+      setColor(Colors.red);
+    } else if (_gameWorld.goodMageCount > _gameWorld.evilMageCount) {
+      setColor(Colors.green);
+    } else {
+      setColor(game.dataStore.defaultWorldColor);
+    }
+  }
+
   _updateHighlightedStatus() {
     if (game.dataStore.highlightedWorld == _gameWorld.name) {
       highlighted = true;
@@ -98,7 +110,7 @@ class GameWorldComponent extends CircleComponent
     }
   }
 
-  _updateMageCounter() {
+  _updateGoodMageCounter() {
     if (_gameWorld.goodMageCount > 0 && mageCounter != null) {
       mageCounter!.updateCount(_gameWorld.goodMageCount);
     }

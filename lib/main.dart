@@ -28,7 +28,10 @@ class RTSGame extends PannableGame<RTSWorld> {
 class RTSWorld extends World with HasGameReference<RTSGame> {
   @override
   Future<void> onLoad() async {
+    print('emitting on game start event');
     game.eventBus.emit(OnGameStart());
+
+    return;
   }
 
   @override
@@ -36,6 +39,7 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
     if (!isMounted) {
       return;
     }
+    print('emitting update event');
     game.eventBus.emit(OnGameTick(dt));
     // cannot be less than 0
     // this zooms out
