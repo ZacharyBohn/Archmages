@@ -34,6 +34,8 @@ class GameWorldComponent extends CircleComponent
   double timeSinceLastFight = 0.0;
   bool highlighted = false;
 
+  String get name => _gameWorld.name;
+
   List<String> get connectedWorlds => _gameWorld.connectedWorlds;
 
   int get goodMageCount => _gameWorld.goodMageCount;

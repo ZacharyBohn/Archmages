@@ -16,6 +16,7 @@ class DataStore {
   // Only gonna be used temporarily =0
   // #famousLastWords
   late final Timer mageGenerator;
+  late final Timer evilMageAI;
 
   final worldBoundaryPadding = 300.0;
 
