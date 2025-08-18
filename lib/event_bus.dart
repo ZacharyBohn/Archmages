@@ -21,6 +21,7 @@ class EventBus {
 
   final RTSGame game;
 
+  /// Receive all incoming events through here
   void emit(GameEvent event) {
     if (event is OnWorldTap) {
       _handleWorldTap(event);
@@ -139,20 +140,20 @@ class EventBus {
     for (final world in game.dataStore.gameWorlds.values) {
       if (world.evilMageCount > 1) {
         // 50% chance to send an evil mage
-        if (game.random.nextDouble() < 0.5) {
-          // Find an adjacent world that is not evil
-          final nonEvilAdjacentWorlds = world.connectedWorlds.where((
+        if (game.random.nextDouble() < 0.33) {
+          final lessEvilAdjacentWorlds = world.connectedWorlds.where((
             worldName,
           ) {
             final connectedWorld = game.dataStore.gameWorlds[worldName]!;
-            return connectedWorld.evilMageCount == 0;
+            return world.goodMageCount == 0 &&
+                connectedWorld.evilMageCount < (world.evilMageCount / 2);
           }).toList();
 
-          if (nonEvilAdjacentWorlds.isNotEmpty) {
+          if (lessEvilAdjacentWorlds.isNotEmpty) {
             // Pick a random non-evil adjacent world
             final targetWorldName =
-                nonEvilAdjacentWorlds[game.random.nextInt(
-                  nonEvilAdjacentWorlds.length,
+                lessEvilAdjacentWorlds[game.random.nextInt(
+                  lessEvilAdjacentWorlds.length,
                 )];
             _moveEvilMage(from: world.name, to: targetWorldName);
           }
