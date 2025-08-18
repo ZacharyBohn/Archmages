@@ -13,3 +13,5 @@ class OnGameTick extends GameEvent {
   OnGameTick(this.dt);
   final double dt;
 }
+
+class OnEvilMageAITick extends GameEvent {}

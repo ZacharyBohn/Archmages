@@ -29,25 +29,34 @@ class GameWorldComponent extends CircleComponent
   GameWorld _gameWorld;
   late TextComponent label;
   MageComponent? mageCounter;
+  MageComponent? evilMageCounter;
+  double fightCooldown = 1.0;
+  double timeSinceLastFight = 0.0;
   bool highlighted = false;
+
+  String get name => _gameWorld.name;
 
   List<String> get connectedWorlds => _gameWorld.connectedWorlds;
 
-  int get mageCount => _gameWorld.mageCount;
+  int get goodMageCount => _gameWorld.goodMageCount;
+  int get evilMageCount => _gameWorld.evilMageCount;
 
   void setMageCount(int count) {
-    _gameWorld.mageCount = count;
+    _gameWorld.goodMageCount = count;
+    _updateWorldColor();
+  }
+
+  void setEvilMageCount(int count) {
+    _gameWorld.evilMageCount = count;
+    _updateWorldColor();
   }
 
   int decrementMages() {
     // TODO
     // maybe make this more than 1 optional
-    if (_gameWorld.mageCount > 0) {
-      _gameWorld.mageCount -= 1;
-      if (_gameWorld.mageCount == 0) {
-        _gameWorld.color = Color(0xFF505050);
-        setColor(Color(0xFF505050));
-      }
+    if (_gameWorld.goodMageCount > 0) {
+      _gameWorld.goodMageCount -= 1;
+      _updateWorldColor();
       return 1;
     }
     return 0;
@@ -57,15 +66,42 @@ class GameWorldComponent extends CircleComponent
     if (count == 0) {
       return;
     }
-    _gameWorld.mageCount += count;
-    _gameWorld.color = Colors.green;
-    setColor(Colors.green);
+    _gameWorld.goodMageCount += count;
+    _updateWorldColor();
   }
 
   @override
   void update(double dt) {
-    _updateMageCounter();
+    super.update(dt);
+    if (!isMounted) {
+      return;
+    }
+    _updateGoodMageCounter();
+    _updateEvilMageCounter();
     _updateHighlightedStatus();
+    _handleFighting(dt);
+    _updateWorldColor();
+  }
+
+  void _handleFighting(double dt) {
+    timeSinceLastFight += dt;
+    if (timeSinceLastFight >= fightCooldown) {
+      if (_gameWorld.goodMageCount > 0 && _gameWorld.evilMageCount > 0) {
+        _gameWorld.goodMageCount--;
+        _gameWorld.evilMageCount--;
+      }
+      timeSinceLastFight = 0.0;
+    }
+  }
+
+  void _updateWorldColor() {
+    if (_gameWorld.evilMageCount > _gameWorld.goodMageCount) {
+      setColor(Colors.red);
+    } else if (_gameWorld.goodMageCount > _gameWorld.evilMageCount) {
+      setColor(Colors.green);
+    } else {
+      setColor(game.dataStore.defaultWorldColor);
+    }
   }
 
   _updateHighlightedStatus() {
@@ -76,22 +112,43 @@ class GameWorldComponent extends CircleComponent
     }
   }
 
-  _updateMageCounter() {
-    if (_gameWorld.mageCount > 0 && mageCounter != null) {
-      mageCounter!.updateCount(_gameWorld.mageCount);
+  _updateGoodMageCounter() {
+    if (_gameWorld.goodMageCount > 0 && mageCounter != null) {
+      mageCounter!.updateCount(_gameWorld.goodMageCount);
     }
-    if (_gameWorld.mageCount > 0 && mageCounter == null) {
+    if (_gameWorld.goodMageCount > 0 && mageCounter == null) {
       final padding = 10;
       mageCounter = MageComponent(
-        number: _gameWorld.mageCount,
+        number: _gameWorld.goodMageCount,
         position: Vector2(size.x + padding, 0),
         size: Vector2.all(40),
       );
       add(mageCounter!);
     }
-    if (_gameWorld.mageCount == 0 && mageCounter != null) {
+    if (_gameWorld.goodMageCount == 0 && mageCounter != null) {
       remove(mageCounter!);
       mageCounter = null;
+    }
+  }
+
+  _updateEvilMageCounter() {
+    if (_gameWorld.evilMageCount > 0 && evilMageCounter != null) {
+      evilMageCounter!.updateCount(_gameWorld.evilMageCount);
+    }
+    if (_gameWorld.evilMageCount > 0 && evilMageCounter == null) {
+      final padding = 10;
+      evilMageCounter = MageComponent(
+        isEvil: true,
+        number: _gameWorld.evilMageCount,
+        position: Vector2(-size.x - padding, 0),
+        size: Vector2.all(40),
+        textOnLeft: true,
+      );
+      add(evilMageCounter!);
+    }
+    if (_gameWorld.evilMageCount == 0 && evilMageCounter != null) {
+      remove(evilMageCounter!);
+      evilMageCounter = null;
     }
   }
 

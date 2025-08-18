@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:archmage_rts/pannable_game.dart';
 import 'game_events.dart';
 
+import 'dart:math';
+
 void main() {
   runApp(GameWidget(game: RTSGame(world: RTSWorld())));
 }
@@ -23,12 +25,15 @@ class RTSGame extends PannableGame<RTSWorld> {
 
   late final EventBus eventBus;
   final DataStore dataStore = DataStore();
+  final Random random = Random();
 }
 
 class RTSWorld extends World with HasGameReference<RTSGame> {
   @override
   Future<void> onLoad() async {
     game.eventBus.emit(OnGameStart());
+
+    return;
   }
 
   @override

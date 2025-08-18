@@ -38,6 +38,10 @@ class EventBus {
       _handleGameStart();
       return;
     }
+    if (event is OnEvilMageAITick) {
+      _handleEvilMageAI();
+      return;
+    }
   }
 
   Future<void> _handleGameStart() async {
@@ -62,13 +66,14 @@ class EventBus {
       maxDistance: 700.0,
       maxConnections: 6,
       worldSize: 45.0,
-      worldColorOverride: Color(0xFF505050),
+      worldColorOverride: game.dataStore.defaultWorldColor,
     )) {
       _addWorld(world);
     }
     // --- Starting World Settings ---
     game.dataStore.gameWorlds['W1']!.setColor(Colors.green);
     game.dataStore.gameWorlds['W1']!.setMageCount(12);
+    game.dataStore.gameWorlds['W2']!.setEvilMageCount(10);
 
     // --- HUD ---
     game.camera.viewport.add(Hud());
@@ -80,11 +85,26 @@ class EventBus {
     game.dataStore.mageGenerator = Timer(
       3,
       onTick: () {
-        game.dataStore.gameWorlds['W1']?.incrementMages(1);
+        for (final world in game.dataStore.gameWorlds.values) {
+          if (world.goodMageCount > 0 && world.evilMageCount == 0) {
+            world.incrementMages(1);
+          } else if (world.evilMageCount > 0 && world.goodMageCount == 0) {
+            world.setEvilMageCount(world.evilMageCount + 1);
+          }
+        }
       },
       repeat: true,
     );
     game.dataStore.mageGenerator.start();
+
+    game.dataStore.evilMageAI = Timer(
+      2,
+      onTick: () {
+        emit(OnEvilMageAITick());
+      },
+      repeat: true,
+    );
+    game.dataStore.evilMageAI.start();
   }
 
   void _handleOnBackgroundTapped() {
@@ -108,13 +128,40 @@ class EventBus {
 
   void _handleGameTick(OnGameTick event) {
     game.dataStore.mageGenerator.update(event.dt);
+    game.dataStore.evilMageAI.update(event.dt);
     return;
+  }
+
+  void _handleEvilMageAI() {
+    for (final world in game.dataStore.gameWorlds.values) {
+      if (world.evilMageCount > 1) {
+        // 50% chance to send an evil mage
+        if (game.random.nextDouble() < 0.5) {
+          // Find an adjacent world that is not evil
+          final nonEvilAdjacentWorlds = world.connectedWorlds.where((
+            worldName,
+          ) {
+            final connectedWorld = game.dataStore.gameWorlds[worldName]!;
+            return connectedWorld.evilMageCount == 0;
+          }).toList();
+
+          if (nonEvilAdjacentWorlds.isNotEmpty) {
+            // Pick a random non-evil adjacent world
+            final targetWorldName =
+                nonEvilAdjacentWorlds[game.random.nextInt(
+                  nonEvilAdjacentWorlds.length,
+                )];
+            _moveEvilMage(from: world.name, to: targetWorldName);
+          }
+        }
+      }
+    }
   }
 
   void _moveMage({required String from, required String to}) {
     final fromWorld = game.dataStore.gameWorlds[from]!;
     final toWorld = game.dataStore.gameWorlds[to]!;
-    if (fromWorld.connectedWorlds.contains(to) && fromWorld.mageCount > 0) {
+    if (fromWorld.connectedWorlds.contains(to) && fromWorld.goodMageCount > 0) {
       final count = fromWorld.decrementMages();
       if (count > 0) {
         final mage = MageComponent(number: count, size: Vector2.all(20));
@@ -138,6 +185,40 @@ class EventBus {
         );
         game.world.add(mage);
       }
+    }
+  }
+
+  void _moveEvilMage({required String from, required String to}) {
+    final fromWorld = game.dataStore.gameWorlds[from]!;
+    final toWorld = game.dataStore.gameWorlds[to]!;
+    if (fromWorld.connectedWorlds.contains(to) && fromWorld.evilMageCount > 0) {
+      fromWorld.setEvilMageCount(fromWorld.evilMageCount - 1);
+      final count = 1; // Always move one evil mage
+
+      final mage = MageComponent(
+        number: count,
+        size: Vector2.all(20),
+        isEvil: true,
+      );
+      mage.anchor = Anchor.center;
+
+      final direction = (toWorld.position - fromWorld.position).normalized();
+
+      final startPosition = fromWorld.position + direction * fromWorld.radius;
+      final endPosition = toWorld.position - direction * toWorld.radius;
+
+      mage.position = startPosition;
+      mage.add(
+        MoveToEffect(
+          endPosition,
+          EffectController(speed: 150),
+          onComplete: () {
+            toWorld.setEvilMageCount(toWorld.evilMageCount + count);
+            mage.removeFromParent();
+          },
+        ),
+      );
+      game.world.add(mage);
     }
   }
 

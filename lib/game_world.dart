@@ -7,7 +7,8 @@ class GameWorld {
     this.size,
     this.position,
     this.color, {
-    this.mageCount = 0,
+    this.goodMageCount = 0,
+    this.evilMageCount = 0,
     List<String>? connectedWorlds,
   }) : this.connectedWorlds = connectedWorlds ?? [];
 
@@ -16,5 +17,6 @@ class GameWorld {
   Vector2 position;
   Color color;
   List<String> connectedWorlds = [];
-  int mageCount;
+  int goodMageCount;
+  int evilMageCount;
 }
