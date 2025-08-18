@@ -96,9 +96,9 @@ class GameWorldComponent extends CircleComponent
   }
 
   @override
-  void onTapDown(TapDownEvent event) {
+  void onTapUp(TapUpEvent event) {
     game.eventBus.emit(OnWorldTap(_gameWorld.name));
-    super.onTapDown(event);
+    super.onTapUp(event);
   }
 
   @override
