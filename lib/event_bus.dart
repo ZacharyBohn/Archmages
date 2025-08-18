@@ -62,13 +62,14 @@ class EventBus {
       maxDistance: 700.0,
       maxConnections: 6,
       worldSize: 45.0,
-      worldColorOverride: Color(0xFF505050),
+      worldColorOverride: game.dataStore.defaultWorldColor,
     )) {
       _addWorld(world);
     }
     // --- Starting World Settings ---
     game.dataStore.gameWorlds['W1']!.setColor(Colors.green);
     game.dataStore.gameWorlds['W1']!.setMageCount(12);
+    game.dataStore.gameWorlds['W2']!.setEvilMageCount(10);
 
     // --- HUD ---
     game.camera.viewport.add(Hud());

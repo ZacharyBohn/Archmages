@@ -50,6 +50,9 @@ List<GameWorld> generateWorlds({
             Colors.primaries[random.nextInt(Colors.primaries.length)],
         connectedWorlds: [],
       );
+      if (newWorld.name == 'W2') {
+        newWorld.evilMageCount = 10;
+      }
       worlds.add(newWorld);
       retries = 0; // Reset retries after a successful placement
     } else {
