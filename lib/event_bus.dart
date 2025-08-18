@@ -76,7 +76,7 @@ class EventBus {
     game.dataStore.gameWorlds['W2']!.setEvilMageCount(10);
 
     // --- HUD ---
-    game.camera.viewport.add(Hud());
+    // game.camera.viewport.add(Hud());
 
     // --- Set initial camera position ---
     game.camera.viewfinder.position = game.dataStore.gameWorlds['W1']!.position;
@@ -117,8 +117,11 @@ class EventBus {
       return;
     }
     if (game.dataStore.highlightedWorld != null) {
-      // TODO: animate moving mages
-      _moveMage(from: game.dataStore.highlightedWorld!, to: event.worldName);
+      _moveMage(
+        from: game.dataStore.highlightedWorld!,
+        to: event.worldName,
+        moveMultiple: event.isLongPress,
+      );
       game.dataStore.highlightedWorld = null;
       return;
     }
@@ -158,11 +161,16 @@ class EventBus {
     }
   }
 
-  void _moveMage({required String from, required String to}) {
+  void _moveMage({
+    required String from,
+    required String to,
+    required bool moveMultiple,
+  }) {
     final fromWorld = game.dataStore.gameWorlds[from]!;
     final toWorld = game.dataStore.gameWorlds[to]!;
     if (fromWorld.connectedWorlds.contains(to) && fromWorld.goodMageCount > 0) {
-      final count = fromWorld.decrementMages();
+      final amountToMove = moveMultiple ? fromWorld.goodMageCount - 1 : 1;
+      final count = fromWorld.decrementMages(amountToMove);
       if (count > 0) {
         final mage = MageComponent(number: count, size: Vector2.all(20));
         mage.anchor = Anchor.center;
