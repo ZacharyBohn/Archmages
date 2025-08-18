@@ -8,4 +8,10 @@ A real-time strategy
 
 ## Game Overview
 
-TODO
+You start with 1 world.
+
+Enemy will start with 1 world.
+
+Send your mages to other worlds to capture them. Do this by tapping a world to highlight it, then tapping the world you wish to send a mage. OR long press on the target world to send a group of mages.
+
+Each world that you control will gain a mage every so often, but so will the enemies.
