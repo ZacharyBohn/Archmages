@@ -11,6 +11,9 @@ class DataStore {
   Map<String, PositionComponent> connections = {};
   Set<MageComponent> travelingMages = {};
 
+  int goodWorldCount = 1;
+  int evilWorldCount = 1;
+
   String? highlightedWorld;
 
   // Only gonna be used temporarily =0

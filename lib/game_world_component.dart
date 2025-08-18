@@ -6,6 +6,7 @@ import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
 
+import 'factions.dart';
 import 'game_world.dart';
 
 class GameWorldComponent extends CircleComponent
@@ -16,7 +17,7 @@ class GameWorldComponent extends CircleComponent
     super.position,
     super.priority = 1,
     super.anchor = Anchor.center,
-  }) : _gameWorld = gameWorld,
+  }) : this.gameWorld = gameWorld,
        super(paint: Paint()..color = color, radius: gameWorld.size);
 
   static GameWorldComponent from(GameWorld gameWorld) {
@@ -27,7 +28,7 @@ class GameWorldComponent extends CircleComponent
     );
   }
 
-  GameWorld _gameWorld;
+  GameWorld gameWorld;
   late TextComponent label;
   MageComponent? mageCounter;
   MageComponent? evilMageCounter;
@@ -38,28 +39,28 @@ class GameWorldComponent extends CircleComponent
   bool _isLongPress = false;
   final longPressDelay = const Duration(milliseconds: 200);
 
-  String get name => _gameWorld.name;
+  String get name => gameWorld.name;
 
-  List<String> get connectedWorlds => _gameWorld.connectedWorlds;
+  List<String> get connectedWorlds => gameWorld.connectedWorlds;
 
-  int get goodMageCount => _gameWorld.goodMageCount;
-  int get evilMageCount => _gameWorld.evilMageCount;
+  int get goodMageCount => gameWorld.goodMageCount;
+  int get evilMageCount => gameWorld.evilMageCount;
 
   void setMageCount(int count) {
-    _gameWorld.goodMageCount = count;
-    _updateWorldColor();
+    gameWorld.goodMageCount = count;
+    _updateWorldColorAndAlliance();
   }
 
   void setEvilMageCount(int count) {
-    _gameWorld.evilMageCount = count;
-    _updateWorldColor();
+    gameWorld.evilMageCount = count;
+    _updateWorldColorAndAlliance();
   }
 
   int decrementMages([int count = 1]) {
-    if (_gameWorld.goodMageCount > 0) {
-      final actualCount = min(count, _gameWorld.goodMageCount);
-      _gameWorld.goodMageCount -= actualCount;
-      _updateWorldColor();
+    if (gameWorld.goodMageCount > 0) {
+      final actualCount = min(count, gameWorld.goodMageCount);
+      gameWorld.goodMageCount -= actualCount;
+      _updateWorldColorAndAlliance();
       return actualCount;
     }
     return 0;
@@ -69,8 +70,8 @@ class GameWorldComponent extends CircleComponent
     if (count == 0) {
       return;
     }
-    _gameWorld.goodMageCount += count;
-    _updateWorldColor();
+    gameWorld.goodMageCount += count;
+    _updateWorldColorAndAlliance();
   }
 
   @override
@@ -83,32 +84,44 @@ class GameWorldComponent extends CircleComponent
     _updateEvilMageCounter();
     _updateHighlightedStatus();
     _handleFighting(dt);
-    _updateWorldColor();
+    _updateWorldColorAndAlliance();
   }
 
   void _handleFighting(double dt) {
     timeSinceLastFight += dt;
     if (timeSinceLastFight >= fightCooldown) {
-      if (_gameWorld.goodMageCount > 0 && _gameWorld.evilMageCount > 0) {
-        _gameWorld.goodMageCount--;
-        _gameWorld.evilMageCount--;
+      if (gameWorld.goodMageCount > 0 && gameWorld.evilMageCount > 0) {
+        gameWorld.goodMageCount--;
+        gameWorld.evilMageCount--;
       }
       timeSinceLastFight = 0.0;
     }
   }
 
-  void _updateWorldColor() {
-    if (_gameWorld.evilMageCount > _gameWorld.goodMageCount) {
+  void _updateWorldColorAndAlliance() {
+    final oldFaction = gameWorld.faction;
+    Faction newFaction;
+    if (gameWorld.evilMageCount > gameWorld.goodMageCount) {
       setColor(Colors.red);
-    } else if (_gameWorld.goodMageCount > _gameWorld.evilMageCount) {
+      newFaction = Faction.evil;
+    } else if (gameWorld.goodMageCount > gameWorld.evilMageCount) {
       setColor(Colors.green);
+      newFaction = Faction.good;
     } else {
       setColor(game.dataStore.defaultWorldColor);
+      newFaction = Faction.neutral;
     }
+    if (oldFaction == newFaction) {
+      return;
+    }
+    game.eventBus.emit(
+      OnWorldChangedAliance(oldFaction: oldFaction, newFaction: newFaction),
+    );
+    gameWorld.faction = newFaction;
   }
 
   _updateHighlightedStatus() {
-    if (game.dataStore.highlightedWorld == _gameWorld.name) {
+    if (game.dataStore.highlightedWorld == gameWorld.name) {
       highlighted = true;
     } else {
       highlighted = false;
@@ -116,40 +129,40 @@ class GameWorldComponent extends CircleComponent
   }
 
   _updateGoodMageCounter() {
-    if (_gameWorld.goodMageCount > 0 && mageCounter != null) {
-      mageCounter!.updateCount(_gameWorld.goodMageCount);
+    if (gameWorld.goodMageCount > 0 && mageCounter != null) {
+      mageCounter!.updateCount(gameWorld.goodMageCount);
     }
-    if (_gameWorld.goodMageCount > 0 && mageCounter == null) {
+    if (gameWorld.goodMageCount > 0 && mageCounter == null) {
       final padding = 10;
       mageCounter = MageComponent(
-        number: _gameWorld.goodMageCount,
+        number: gameWorld.goodMageCount,
         position: Vector2(size.x + padding, 0),
         size: Vector2.all(40),
       );
       add(mageCounter!);
     }
-    if (_gameWorld.goodMageCount == 0 && mageCounter != null) {
+    if (gameWorld.goodMageCount == 0 && mageCounter != null) {
       remove(mageCounter!);
       mageCounter = null;
     }
   }
 
   _updateEvilMageCounter() {
-    if (_gameWorld.evilMageCount > 0 && evilMageCounter != null) {
-      evilMageCounter!.updateCount(_gameWorld.evilMageCount);
+    if (gameWorld.evilMageCount > 0 && evilMageCounter != null) {
+      evilMageCounter!.updateCount(gameWorld.evilMageCount);
     }
-    if (_gameWorld.evilMageCount > 0 && evilMageCounter == null) {
+    if (gameWorld.evilMageCount > 0 && evilMageCounter == null) {
       final padding = 10;
       evilMageCounter = MageComponent(
         isEvil: true,
-        number: _gameWorld.evilMageCount,
+        number: gameWorld.evilMageCount,
         position: Vector2(-size.x - padding, 0),
         size: Vector2.all(40),
         textOnLeft: true,
       );
       add(evilMageCounter!);
     }
-    if (_gameWorld.evilMageCount == 0 && evilMageCounter != null) {
+    if (gameWorld.evilMageCount == 0 && evilMageCounter != null) {
       remove(evilMageCounter!);
       evilMageCounter = null;
     }
@@ -170,7 +183,7 @@ class GameWorldComponent extends CircleComponent
         _isLongPress = true;
       }
     }
-    game.eventBus.emit(OnWorldTap(_gameWorld.name, isLongPress: _isLongPress));
+    game.eventBus.emit(OnWorldTap(gameWorld.name, isLongPress: _isLongPress));
     _tapDownTime = null;
     _isLongPress = false;
     super.onTapUp(event);
@@ -178,7 +191,7 @@ class GameWorldComponent extends CircleComponent
 
   @override
   void setColor(Color color, {Object? paintId}) {
-    _gameWorld.color = color;
+    gameWorld.color = color;
     super.setColor(color, paintId: paintId);
   }
 
@@ -186,7 +199,7 @@ class GameWorldComponent extends CircleComponent
   Future<void> onLoad() async {
     super.onLoad();
     label = TextComponent(
-      text: _gameWorld.name,
+      text: gameWorld.name,
       position: size / 2,
       anchor: Anchor.center,
       textRenderer: TextPaint(style: TextStyle(color: Colors.black)),

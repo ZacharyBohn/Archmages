@@ -1,3 +1,5 @@
+import 'package:archmage_rts/factions.dart';
+
 abstract class GameEvent {}
 
 class OnGameStart extends GameEvent {}
@@ -16,3 +18,9 @@ class OnGameTick extends GameEvent {
 }
 
 class OnEvilMageAITick extends GameEvent {}
+
+class OnWorldChangedAliance extends GameEvent {
+  OnWorldChangedAliance({required this.oldFaction, required this.newFaction});
+  final Faction oldFaction;
+  final Faction newFaction;
+}

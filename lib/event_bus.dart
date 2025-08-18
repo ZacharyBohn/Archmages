@@ -4,6 +4,7 @@ import 'package:flame/effects.dart';
 import 'package:flutter/material.dart';
 
 import 'background_noise.dart';
+import 'factions.dart';
 import 'game_events.dart';
 import 'game_world.dart';
 import 'game_world_component.dart';
@@ -43,6 +44,10 @@ class EventBus {
       _handleEvilMageAI();
       return;
     }
+    if (event is OnWorldChangedAliance) {
+      _handleWorldChangeAliance(event);
+      return;
+    }
   }
 
   Future<void> _handleGameStart() async {
@@ -74,10 +79,12 @@ class EventBus {
     // --- Starting World Settings ---
     game.dataStore.gameWorlds['W1']!.setColor(Colors.green);
     game.dataStore.gameWorlds['W1']!.setMageCount(12);
+    game.dataStore.gameWorlds['W1']!.gameWorld.faction = Faction.good;
     game.dataStore.gameWorlds['W2']!.setEvilMageCount(10);
+    game.dataStore.gameWorlds['W2']!.gameWorld.faction = Faction.evil;
 
     // --- HUD ---
-    // game.camera.viewport.add(Hud());
+    game.camera.viewport.add(Hud());
 
     // --- Set initial camera position ---
     game.camera.viewfinder.position = game.dataStore.gameWorlds['W1']!.position;
@@ -146,7 +153,7 @@ class EventBus {
     for (final world in game.dataStore.gameWorlds.values) {
       if (world.evilMageCount > 1) {
         // 50% chance to send an evil mage
-        if (game.random.nextDouble() < 0.33) {
+        if (game.random.nextDouble() < 0.5) {
           final lessEvilAdjacentWorlds = world.connectedWorlds.where((
             worldName,
           ) {
@@ -203,6 +210,7 @@ class EventBus {
     }
   }
 
+  // TODO: add count
   void _moveEvilMage({required String from, required String to}) {
     final fromWorld = game.dataStore.gameWorlds[from]!;
     final toWorld = game.dataStore.gameWorlds[to]!;
@@ -235,6 +243,26 @@ class EventBus {
       );
       game.world.add(mage);
     }
+  }
+
+  void _handleWorldChangeAliance(OnWorldChangedAliance event) {
+    // if (event.oldFaction == Faction.good) {
+    //   game.dataStore.goodWorldCount -= 1;
+    // } else if (event.oldFaction == Faction.evil) {
+    //   game.dataStore.evilWorldCount -= 1;
+    // }
+
+    // if (event.newFaction == Faction.good) {
+    //   game.dataStore.goodWorldCount += 1;
+    // } else if (event.newFaction == Faction.neutral) {
+    //   game.dataStore.evilWorldCount += 1;
+    // }
+    game.dataStore.goodWorldCount = game.dataStore.gameWorlds.values
+        .where((world) => world.goodMageCount > world.evilMageCount)
+        .length;
+    game.dataStore.evilWorldCount = game.dataStore.gameWorlds.values
+        .where((world) => world.goodMageCount < world.evilMageCount)
+        .length;
   }
 
   void _addWorld(GameWorld world) {

@@ -1,3 +1,4 @@
+import 'package:archmage_rts/factions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart' show Color;
 
@@ -9,6 +10,7 @@ class GameWorld {
     this.color, {
     this.goodMageCount = 0,
     this.evilMageCount = 0,
+    this.faction = Faction.neutral,
     List<String>? connectedWorlds,
   }) : this.connectedWorlds = connectedWorlds ?? [];
 
@@ -19,4 +21,5 @@ class GameWorld {
   List<String> connectedWorlds = [];
   int goodMageCount;
   int evilMageCount;
+  Faction faction;
 }
