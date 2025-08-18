@@ -81,7 +81,13 @@ class EventBus {
     game.dataStore.mageGenerator = Timer(
       3,
       onTick: () {
-        game.dataStore.gameWorlds['W1']?.incrementMages(1);
+        for (final world in game.dataStore.gameWorlds.values) {
+          if (world.goodMageCount > 0 && world.evilMageCount == 0) {
+            world.incrementMages(1);
+          } else if (world.evilMageCount > 0 && world.goodMageCount == 0) {
+            world.setEvilMageCount(world.evilMageCount + 1);
+          }
+        }
       },
       repeat: true,
     );
@@ -115,7 +121,7 @@ class EventBus {
   void _moveMage({required String from, required String to}) {
     final fromWorld = game.dataStore.gameWorlds[from]!;
     final toWorld = game.dataStore.gameWorlds[to]!;
-    if (fromWorld.connectedWorlds.contains(to) && fromWorld.mageCount > 0) {
+    if (fromWorld.connectedWorlds.contains(to) && fromWorld.goodMageCount > 0) {
       final count = fromWorld.decrementMages();
       if (count > 0) {
         final mage = MageComponent(number: count, size: Vector2.all(20));

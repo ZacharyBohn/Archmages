@@ -36,7 +36,7 @@ class GameWorldComponent extends CircleComponent
 
   List<String> get connectedWorlds => _gameWorld.connectedWorlds;
 
-  int get mageCount => _gameWorld.goodMageCount;
+  int get goodMageCount => _gameWorld.goodMageCount;
   int get evilMageCount => _gameWorld.evilMageCount;
 
   void setMageCount(int count) {
