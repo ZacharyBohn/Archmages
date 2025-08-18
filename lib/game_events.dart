@@ -3,8 +3,9 @@ abstract class GameEvent {}
 class OnGameStart extends GameEvent {}
 
 class OnWorldTap extends GameEvent {
-  OnWorldTap(this.worldName);
+  OnWorldTap(this.worldName, {this.isLongPress = false});
   String worldName;
+  bool isLongPress;
 }
 
 class OnBackgroundTapped extends GameEvent {}

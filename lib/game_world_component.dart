@@ -4,6 +4,7 @@ import 'package:archmage_rts/main.dart';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
+import 'dart:math';
 
 import 'game_world.dart';
 
@@ -33,6 +34,8 @@ class GameWorldComponent extends CircleComponent
   double fightCooldown = 1.0;
   double timeSinceLastFight = 0.0;
   bool highlighted = false;
+  DateTime? _tapDownTime;
+  bool _isLongPress = false;
 
   String get name => _gameWorld.name;
 
@@ -51,13 +54,12 @@ class GameWorldComponent extends CircleComponent
     _updateWorldColor();
   }
 
-  int decrementMages() {
-    // TODO
-    // maybe make this more than 1 optional
+  int decrementMages([int count = 1]) {
     if (_gameWorld.goodMageCount > 0) {
-      _gameWorld.goodMageCount -= 1;
+      final actualCount = min(count, _gameWorld.goodMageCount);
+      _gameWorld.goodMageCount -= actualCount;
       _updateWorldColor();
-      return 1;
+      return actualCount;
     }
     return 0;
   }
@@ -153,8 +155,23 @@ class GameWorldComponent extends CircleComponent
   }
 
   @override
+  void onTapDown(TapDownEvent event) {
+    _tapDownTime = DateTime.now();
+    _isLongPress = false;
+    super.onTapDown(event);
+  }
+
+  @override
   void onTapUp(TapUpEvent event) {
-    game.eventBus.emit(OnWorldTap(_gameWorld.name));
+    if (_tapDownTime != null) {
+      final tapDuration = DateTime.now().difference(_tapDownTime!);
+      if (tapDuration >= const Duration(milliseconds: 400)) {
+        _isLongPress = true;
+      }
+    }
+    game.eventBus.emit(OnWorldTap(_gameWorld.name, isLongPress: _isLongPress));
+    _tapDownTime = null;
+    _isLongPress = false;
     super.onTapUp(event);
   }
 
