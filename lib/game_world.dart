@@ -8,8 +8,7 @@ class GameWorld {
     this.size,
     this.position,
     this.color, {
-    this.goodMageCount = 0,
-    this.evilMageCount = 0,
+    this.mageCount = 0,
     this.faction = Faction.neutral,
     List<String>? connectedWorlds,
   }) : this.connectedWorlds = connectedWorlds ?? [];
@@ -19,7 +18,6 @@ class GameWorld {
   Vector2 position;
   Color color;
   List<String> connectedWorlds = [];
-  int goodMageCount;
-  int evilMageCount;
+  int mageCount;
   Faction faction;
 }
