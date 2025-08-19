@@ -1,5 +1,4 @@
 import 'package:archmage_rts/game_events.dart';
-import 'package:archmage_rts/mage_component.dart';
 import 'package:archmage_rts/main.dart';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
@@ -28,11 +27,7 @@ class GameWorldComponent extends CircleComponent
   }
 
   GameWorld gameWorld;
-  late TextComponent label;
-  MageComponent? mageCounter;
-  MageComponent? evilMageCounter;
-  double fightCooldown = 1.0;
-  double timeSinceLastFight = 0.0;
+  TextComponent? mageCountLabel;
   bool highlighted = false;
   DateTime? _tapDownTime;
   bool _isLongPress = false;
@@ -42,34 +37,39 @@ class GameWorldComponent extends CircleComponent
 
   List<String> get connectedWorlds => gameWorld.connectedWorlds;
 
-  int get goodMageCount => gameWorld.goodMageCount;
-  int get evilMageCount => gameWorld.evilMageCount;
+  int get mageCount => gameWorld.mageCount;
 
-  void setMageCount(int count) {
-    gameWorld.goodMageCount = count;
-    _updateWorldColorAndAlliance();
-  }
-
-  void setEvilMageCount(int count) {
-    gameWorld.evilMageCount = count;
+  void setMageCount(int count, Faction faction) {
+    gameWorld.mageCount = count;
+    gameWorld.faction = faction;
     _updateWorldColorAndAlliance();
   }
 
   int decrementMages([int count = 1]) {
-    if (gameWorld.goodMageCount > 0) {
-      final actualCount = min(count, gameWorld.goodMageCount);
-      gameWorld.goodMageCount -= actualCount;
+    if (gameWorld.mageCount > 0) {
+      final actualCount = min(count, gameWorld.mageCount);
+      gameWorld.mageCount -= actualCount;
       _updateWorldColorAndAlliance();
       return actualCount;
     }
     return 0;
   }
 
-  void incrementMages(int count) {
+  void incrementMages(int count, Faction faction) {
     if (count == 0) {
       return;
     }
-    gameWorld.goodMageCount += count;
+
+    if (faction == gameWorld.faction) {
+      gameWorld.mageCount += count;
+    } else {
+      if (count > gameWorld.mageCount) {
+        gameWorld.mageCount = count - gameWorld.mageCount;
+        gameWorld.faction = faction;
+      } else {
+        gameWorld.mageCount -= count;
+      }
+    }
     _updateWorldColorAndAlliance();
   }
 
@@ -80,31 +80,18 @@ class GameWorldComponent extends CircleComponent
       return;
     }
     scale = Vector2.all(game.dataStore.componentScale);
-    _updateGoodMageCounter();
-    _updateEvilMageCounter();
+    _updateMageCounter();
     _updateHighlightedStatus();
-    _handleFighting(dt);
     _updateWorldColorAndAlliance();
-  }
-
-  void _handleFighting(double dt) {
-    timeSinceLastFight += dt;
-    if (timeSinceLastFight >= fightCooldown) {
-      if (gameWorld.goodMageCount > 0 && gameWorld.evilMageCount > 0) {
-        gameWorld.goodMageCount--;
-        gameWorld.evilMageCount--;
-      }
-      timeSinceLastFight = 0.0;
-    }
   }
 
   void _updateWorldColorAndAlliance() {
     final oldFaction = gameWorld.faction;
     Faction newFaction;
-    if (gameWorld.evilMageCount > gameWorld.goodMageCount) {
+    if (gameWorld.faction == Faction.evil) {
       setColor(Colors.red);
       newFaction = Faction.evil;
-    } else if (gameWorld.goodMageCount > gameWorld.evilMageCount) {
+    } else if (gameWorld.faction == Faction.good) {
       setColor(Colors.green);
       newFaction = Faction.good;
     } else {
@@ -128,43 +115,22 @@ class GameWorldComponent extends CircleComponent
     }
   }
 
-  _updateGoodMageCounter() {
-    if (gameWorld.goodMageCount > 0 && mageCounter != null) {
-      mageCounter!.updateCount(gameWorld.goodMageCount);
+  _updateMageCounter() {
+    if (gameWorld.mageCount > 0 && mageCountLabel != null) {
+      mageCountLabel!.text = gameWorld.mageCount.toString();
     }
-    if (gameWorld.goodMageCount > 0 && mageCounter == null) {
-      final padding = 10;
-      mageCounter = MageComponent(
-        number: gameWorld.goodMageCount,
-        position: Vector2(size.x + padding, 0),
-        size: Vector2.all(40),
+    if (gameWorld.mageCount > 0 && mageCountLabel == null) {
+      mageCountLabel = TextComponent(
+        text: gameWorld.mageCount.toString(),
+        position: size / 2,
+        anchor: Anchor.center,
+        textRenderer: TextPaint(style: TextStyle(color: Colors.white)),
       );
-      add(mageCounter!);
+      add(mageCountLabel!);
     }
-    if (gameWorld.goodMageCount == 0 && mageCounter != null) {
-      remove(mageCounter!);
-      mageCounter = null;
-    }
-  }
-
-  _updateEvilMageCounter() {
-    if (gameWorld.evilMageCount > 0 && evilMageCounter != null) {
-      evilMageCounter!.updateCount(gameWorld.evilMageCount);
-    }
-    if (gameWorld.evilMageCount > 0 && evilMageCounter == null) {
-      final padding = 10;
-      evilMageCounter = MageComponent(
-        isEvil: true,
-        number: gameWorld.evilMageCount,
-        position: Vector2(size.x + padding, 60),
-        size: Vector2.all(40),
-        // textOnLeft: true,
-      );
-      add(evilMageCounter!);
-    }
-    if (gameWorld.evilMageCount == 0 && evilMageCounter != null) {
-      remove(evilMageCounter!);
-      evilMageCounter = null;
+    if (gameWorld.mageCount == 0 && mageCountLabel != null) {
+      remove(mageCountLabel!);
+      mageCountLabel = null;
     }
   }
 
@@ -198,13 +164,6 @@ class GameWorldComponent extends CircleComponent
   @override
   Future<void> onLoad() async {
     super.onLoad();
-    label = TextComponent(
-      text: gameWorld.name,
-      position: size / 2,
-      anchor: Anchor.center,
-      textRenderer: TextPaint(style: TextStyle(color: Colors.black)),
-    );
-    add(label);
     return;
   }
 

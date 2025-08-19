@@ -92,11 +92,8 @@ class EventBus {
       _addWorld(world);
     }
     // --- Starting World Settings ---
-    game.dataStore.gameWorlds['W1']!.setColor(Colors.green);
-    game.dataStore.gameWorlds['W1']!.setMageCount(12);
-    game.dataStore.gameWorlds['W1']!.gameWorld.faction = Faction.good;
-    game.dataStore.gameWorlds['W2']!.setEvilMageCount(10);
-    game.dataStore.gameWorlds['W2']!.gameWorld.faction = Faction.evil;
+    game.dataStore.gameWorlds['W1']!.setMageCount(12, Faction.good);
+    game.dataStore.gameWorlds['W2']!.setMageCount(10, Faction.evil);
 
     // --- HUD ---
     game.camera.viewport.add(Hud());
@@ -124,14 +121,10 @@ class EventBus {
 
   void _handleMageGeneratorTick() {
     for (final world in game.dataStore.gameWorlds.values) {
-      if (world.goodMageCount > 0 &&
-          world.evilMageCount == 0 &&
-          world.goodMageCount < game.dataStore.maxWorldPopulation) {
-        world.incrementMages(1);
-      } else if (world.evilMageCount > 0 &&
-          world.goodMageCount == 0 &&
-          world.evilMageCount < game.dataStore.maxWorldPopulation) {
-        world.setEvilMageCount(world.evilMageCount + 1);
+      if (world.mageCount > 0 &&
+          world.gameWorld.faction != Faction.neutral &&
+          world.mageCount < game.dataStore.maxWorldPopulation) {
+        world.incrementMages(1, world.gameWorld.faction);
       }
     }
   }
@@ -166,24 +159,23 @@ class EventBus {
 
   void _handleEvilMageAI() {
     for (final world in game.dataStore.gameWorlds.values) {
-      if (world.evilMageCount > 1) {
+      if (world.gameWorld.faction == Faction.evil && world.mageCount > 1) {
         // 50% chance to send an evil mage
         if (game.random.nextDouble() < 0.5) {
-          final lessEvilAdjacentWorlds = world.connectedWorlds.where((
+          final possibleTargets = world.connectedWorlds.where((
             worldName,
           ) {
             final connectedWorld = game.dataStore.gameWorlds[worldName]!;
-            return world.goodMageCount == 0 &&
-                connectedWorld.evilMageCount < (world.evilMageCount / 2);
+            return connectedWorld.gameWorld.faction != Faction.evil;
           }).toList();
 
-          if (lessEvilAdjacentWorlds.isNotEmpty) {
+          if (possibleTargets.isNotEmpty) {
             // Pick a random non-evil adjacent world
             final targetWorldName =
-                lessEvilAdjacentWorlds[game.random.nextInt(
-                  lessEvilAdjacentWorlds.length,
+                possibleTargets[game.random.nextInt(
+                  possibleTargets.length,
                 )];
-            _moveEvilMage(from: world.name, to: targetWorldName);
+            _moveMage(from: world.name, to: targetWorldName, moveMultiple: false);
           }
         }
       }
@@ -197,11 +189,15 @@ class EventBus {
   }) {
     final fromWorld = game.dataStore.gameWorlds[from]!;
     final toWorld = game.dataStore.gameWorlds[to]!;
-    if (fromWorld.connectedWorlds.contains(to) && fromWorld.goodMageCount > 0) {
-      final amountToMove = moveMultiple ? fromWorld.goodMageCount - 1 : 1;
+    if (fromWorld.connectedWorlds.contains(to) && fromWorld.mageCount > 0) {
+      final amountToMove = moveMultiple ? fromWorld.mageCount - 1 : 1;
       final count = fromWorld.decrementMages(amountToMove);
       if (count > 0) {
-        final mage = MageComponent(number: count, size: Vector2.all(30));
+        final mage = MageComponent(
+          number: count,
+          size: Vector2.all(30),
+          isEvil: fromWorld.gameWorld.faction == Faction.evil,
+        );
         mage.anchor = Anchor.center;
 
         final direction = (toWorld.position - fromWorld.position).normalized();
@@ -215,7 +211,7 @@ class EventBus {
             endPosition,
             EffectController(speed: 150),
             onComplete: () {
-              toWorld.incrementMages(count);
+              toWorld.incrementMages(count, fromWorld.gameWorld.faction);
               mage.removeFromParent();
             },
           ),
@@ -225,58 +221,12 @@ class EventBus {
     }
   }
 
-  // TODO: add count
-  void _moveEvilMage({required String from, required String to}) {
-    final fromWorld = game.dataStore.gameWorlds[from]!;
-    final toWorld = game.dataStore.gameWorlds[to]!;
-    if (fromWorld.connectedWorlds.contains(to) && fromWorld.evilMageCount > 0) {
-      fromWorld.setEvilMageCount(fromWorld.evilMageCount - 1);
-      final count = 1; // Always move one evil mage
-
-      final mage = MageComponent(
-        number: count,
-        size: Vector2.all(20),
-        isEvil: true,
-      );
-      mage.anchor = Anchor.center;
-
-      final direction = (toWorld.position - fromWorld.position).normalized();
-
-      final startPosition = fromWorld.position + direction * fromWorld.radius;
-      final endPosition = toWorld.position - direction * toWorld.radius;
-
-      mage.position = startPosition;
-      mage.add(
-        MoveToEffect(
-          endPosition,
-          EffectController(speed: 150),
-          onComplete: () {
-            toWorld.setEvilMageCount(toWorld.evilMageCount + count);
-            mage.removeFromParent();
-          },
-        ),
-      );
-      game.world.add(mage);
-    }
-  }
-
   void _handleWorldChangeAliance(OnWorldChangedAliance event) {
-    // if (event.oldFaction == Faction.good) {
-    //   game.dataStore.goodWorldCount -= 1;
-    // } else if (event.oldFaction == Faction.evil) {
-    //   game.dataStore.evilWorldCount -= 1;
-    // }
-
-    // if (event.newFaction == Faction.good) {
-    //   game.dataStore.goodWorldCount += 1;
-    // } else if (event.newFaction == Faction.neutral) {
-    //   game.dataStore.evilWorldCount += 1;
-    // }
     game.dataStore.goodWorldCount = game.dataStore.gameWorlds.values
-        .where((world) => world.goodMageCount > world.evilMageCount)
+        .where((world) => world.gameWorld.faction == Faction.good)
         .length;
     game.dataStore.evilWorldCount = game.dataStore.gameWorlds.values
-        .where((world) => world.goodMageCount < world.evilMageCount)
+        .where((world) => world.gameWorld.faction == Faction.evil)
         .length;
   }
 
