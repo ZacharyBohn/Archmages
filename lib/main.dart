@@ -26,6 +26,12 @@ class RTSGame extends PannableGame<RTSWorld> {
   late final EventBus eventBus;
   final DataStore dataStore = DataStore();
   final Random random = Random();
+
+  @override
+  void onZoomChanged(double value) {
+    super.onZoomChanged(value);
+    eventBus.emit(OnZoomChanged(value));
+  }
 }
 
 class RTSWorld extends World with HasGameReference<RTSGame> {

@@ -48,6 +48,21 @@ class EventBus {
       _handleWorldChangeAliance(event);
       return;
     }
+    if (event is OnZoomChanged) {
+      _handleZoomChange(event);
+    }
+  }
+
+  _handleZoomChange(OnZoomChanged event) {
+    if (event.value <= 1.0) {
+      final maxScale =
+          game.dataStore.minDistanceBetweenWorlds /
+          (2 * game.dataStore.worldRadius);
+      final newScale = (1.0 / event.value).clamp(1.0, maxScale);
+      game.dataStore.componentScale = newScale;
+    } else {
+      game.dataStore.componentScale = 1.0;
+    }
   }
 
   Future<void> _handleGameStart() async {
@@ -66,12 +81,12 @@ class EventBus {
     );
     // --- Worlds ---
     for (final world in generateWorlds(
-      minDistance: 150.0,
+      minDistance: game.dataStore.minDistanceBetweenWorlds,
       mapSize: game.worldSize,
       worldCount: 80,
       maxDistance: 700.0,
       maxConnections: 6,
-      worldSize: 45.0,
+      worldSize: game.dataStore.worldRadius,
       worldColorOverride: game.dataStore.defaultWorldColor,
     )) {
       _addWorld(world);
@@ -186,7 +201,7 @@ class EventBus {
       final amountToMove = moveMultiple ? fromWorld.goodMageCount - 1 : 1;
       final count = fromWorld.decrementMages(amountToMove);
       if (count > 0) {
-        final mage = MageComponent(number: count, size: Vector2.all(20));
+        final mage = MageComponent(number: count, size: Vector2.all(30));
         mage.anchor = Anchor.center;
 
         final direction = (toWorld.position - fromWorld.position).normalized();

@@ -1,7 +1,8 @@
+import 'package:archmage_rts/main.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
-class MageComponent extends SpriteComponent {
+class MageComponent extends SpriteComponent with HasGameReference<RTSGame> {
   final int number;
   final double padding;
   final bool isEvil;
@@ -35,6 +36,15 @@ class MageComponent extends SpriteComponent {
           : Vector2(size.x + padding, size.y / 2),
     );
     add(_text);
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    if (!isMounted) {
+      return;
+    }
+    scale = Vector2.all(game.dataStore.componentScale);
   }
 
   void updateCount(int count) {

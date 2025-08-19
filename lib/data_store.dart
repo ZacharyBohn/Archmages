@@ -14,6 +14,10 @@ class DataStore {
   int goodWorldCount = 1;
   int evilWorldCount = 1;
 
+  double componentScale = 1.0;
+  final double minDistanceBetweenWorlds = 150.0;
+  final double worldRadius = 45.0;
+
   String? highlightedWorld;
 
   // Only gonna be used temporarily =0

@@ -12,13 +12,12 @@ import 'game_world.dart';
 class GameWorldComponent extends CircleComponent
     with TapCallbacks, HasGameReference<RTSGame> {
   GameWorldComponent({
-    required GameWorld gameWorld,
+    required this.gameWorld,
     Color color = Colors.green,
     super.position,
     super.priority = 1,
     super.anchor = Anchor.center,
-  }) : this.gameWorld = gameWorld,
-       super(paint: Paint()..color = color, radius: gameWorld.size);
+  }) : super(paint: Paint()..color = color, radius: gameWorld.size);
 
   static GameWorldComponent from(GameWorld gameWorld) {
     return GameWorldComponent(
@@ -80,6 +79,7 @@ class GameWorldComponent extends CircleComponent
     if (!isMounted) {
       return;
     }
+    scale = Vector2.all(game.dataStore.componentScale);
     _updateGoodMageCounter();
     _updateEvilMageCounter();
     _updateHighlightedStatus();
@@ -156,9 +156,9 @@ class GameWorldComponent extends CircleComponent
       evilMageCounter = MageComponent(
         isEvil: true,
         number: gameWorld.evilMageCount,
-        position: Vector2(-size.x - padding, 0),
+        position: Vector2(size.x + padding, 60),
         size: Vector2.all(40),
-        textOnLeft: true,
+        // textOnLeft: true,
       );
       add(evilMageCounter!);
     }

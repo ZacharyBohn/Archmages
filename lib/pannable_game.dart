@@ -14,7 +14,7 @@ class PannableGame<T extends World> extends FlameGame<T>
   }) : _backgroundColor = backgroundColor ?? const Color(0xFFBBBBBB);
 
   final Color _backgroundColor;
-  final double minZoom = 0.15;
+  final double minZoom = 0.5;
   final double maxZoom = 5.0;
   late double _startZoom;
   Vector2 _panVelocity = Vector2.zero();
@@ -31,7 +31,10 @@ class PannableGame<T extends World> extends FlameGame<T>
 
   void _setZoom(double value) {
     camera.viewfinder.zoom = value.clamp(minZoom, maxZoom);
+    onZoomChanged(camera.viewfinder.zoom);
   }
+
+  void onZoomChanged(double value) {}
 
   @override
   void onScroll(PointerScrollInfo info) {

@@ -24,3 +24,8 @@ class OnWorldChangedAliance extends GameEvent {
   final Faction oldFaction;
   final Faction newFaction;
 }
+
+class OnZoomChanged extends GameEvent {
+  OnZoomChanged(this.value);
+  final double value;
+}
