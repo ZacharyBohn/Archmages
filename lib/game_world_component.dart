@@ -126,12 +126,6 @@ class GameWorldComponent extends CircleComponent
   }
 
   @override
-  void onTapUp(TapUpEvent event) {
-    // game.eventBus.emit(OnWorldTapUp(gameWorld.name));
-    super.onTapUp(event);
-  }
-
-  @override
   void setColor(Color color, {Object? paintId}) {
     gameWorld.color = color;
     super.setColor(color, paintId: paintId);

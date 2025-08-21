@@ -23,7 +23,6 @@ class DragLineComponent extends PositionComponent
   void render(Canvas canvas) {
     super.render(canvas);
     canvas.drawLine(origin.toOffset(), end.toOffset(), paint);
-    print(end);
     _drawArrow(canvas);
   }
 
@@ -42,12 +41,4 @@ class DragLineComponent extends PositionComponent
     );
     canvas.drawPath(path, paint);
   }
-
-  // @override
-  // void update(double dt) {
-  //   // if (game.dataStore.dragFromWorldCursorPosition != null) {
-  //   //   end = game.dataStore.dragFromWorldCursorPosition!;
-  //   // }
-  //   super.update(dt);
-  // }
 }

@@ -10,10 +10,10 @@ class OnWorldTapDown extends GameEvent {
   String worldName;
 }
 
-class OnWorldTapUp extends GameEvent {
-  OnWorldTapUp(this.worldName);
-  String worldName;
-}
+// class OnWorldTapUp extends GameEvent {
+//   OnWorldTapUp(this.worldName);
+//   String worldName;
+// }
 
 class OnBackgroundTapped extends GameEvent {}
 

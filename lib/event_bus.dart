@@ -58,9 +58,6 @@ class EventBus {
       _handleWorldTapDown(event);
       return;
     }
-    if (event is OnWorldTapUp) {
-      _handleWorldTapUp(event);
-    }
   }
 
   void _handleZoomChange(OnZoomChanged event) {
@@ -154,22 +151,31 @@ class EventBus {
         origin: fromWorldPosition,
         end: fromWorldPosition,
       );
+      game.world.add(game.dataStore.dragLine!);
     } else {
       game.dataStore.dragLine?.end += event.delta;
     }
   }
 
   void _handleCanvasDragEnd() {
+    if (game.dataStore.dragLine != null) {
+      final toWorldName = game.world
+          .componentsAtPoint(game.dataStore.dragLine!.end)
+          .whereType<GameWorldComponent>()
+          .firstOrNull
+          ?.name;
+      if (toWorldName != null) {
+        _moveMage(from: game.dataStore.dragFromWorld!.name, to: toWorldName);
+      }
+      game.world.remove(game.dataStore.dragLine!);
+    }
     game.dataStore.dragLine = null;
     game.dataStore.dragFromWorld = null;
   }
 
   void _handleWorldTapDown(OnWorldTapDown event) {
-    // _moveMage(from: game.dataStore.highlightedWorld!, to: event.worldName);
     game.dataStore.dragFromWorld = game.dataStore.gameWorlds[event.worldName];
   }
-
-  void _handleWorldTapUp(OnWorldTapUp event) {}
 
   void _handleGameTick(OnGameTick event) {
     if (!game.dataStore.setupComplete) {
