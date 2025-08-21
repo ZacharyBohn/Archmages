@@ -51,6 +51,13 @@ class EventBus {
     if (event is OnZoomChanged) {
       _handleZoomChange(event);
     }
+    if (event is OnCanvasDrag) {
+      _handleCanvasDrag(event);
+    }
+  }
+
+  void _handleCanvasDrag(OnCanvasDrag event) {
+    game.pan(event.delta);
   }
 
   _handleZoomChange(OnZoomChanged event) {
@@ -117,6 +124,7 @@ class EventBus {
       repeat: true,
     );
     game.dataStore.evilMageAI.start();
+    game.dataStore.setupComplete = true;
   }
 
   void _handleMageGeneratorTick() {
@@ -152,6 +160,9 @@ class EventBus {
   }
 
   void _handleGameTick(OnGameTick event) {
+    if (!game.dataStore.setupComplete) {
+      return;
+    }
     game.dataStore.mageGenerator.update(event.dt);
     game.dataStore.evilMageAI.update(event.dt);
     return;
@@ -162,9 +173,7 @@ class EventBus {
       if (world.gameWorld.faction == Faction.evil && world.mageCount > 1) {
         // 50% chance to send an evil mage
         if (game.random.nextDouble() < 0.5) {
-          final possibleTargets = world.connectedWorlds.where((
-            worldName,
-          ) {
+          final possibleTargets = world.connectedWorlds.where((worldName) {
             final connectedWorld = game.dataStore.gameWorlds[worldName]!;
             return connectedWorld.gameWorld.faction != Faction.evil;
           }).toList();
@@ -172,10 +181,12 @@ class EventBus {
           if (possibleTargets.isNotEmpty) {
             // Pick a random non-evil adjacent world
             final targetWorldName =
-                possibleTargets[game.random.nextInt(
-                  possibleTargets.length,
-                )];
-            _moveMage(from: world.name, to: targetWorldName, moveMultiple: false);
+                possibleTargets[game.random.nextInt(possibleTargets.length)];
+            _moveMage(
+              from: world.name,
+              to: targetWorldName,
+              moveMultiple: false,
+            );
           }
         }
       }

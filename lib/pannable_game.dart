@@ -10,10 +10,10 @@ class PannableGame<T extends World> extends FlameGame<T>
   PannableGame({
     required super.world,
     required this.worldSize,
+    this.onDrag,
     Color? backgroundColor,
-  }) : _backgroundColor = backgroundColor ?? const Color(0xFFBBBBBB);
+  });
 
-  final Color _backgroundColor;
   final double minZoom = 0.5;
   final double maxZoom = 5.0;
   late double _startZoom;
@@ -21,13 +21,11 @@ class PannableGame<T extends World> extends FlameGame<T>
   final _panDecayStop = 7.0;
   static const double _panFriction = 2.5;
   final Vector2 worldSize;
+  void Function(Vector2 delta)? onDrag;
 
   void stopPanning() {
     _panVelocity = Vector2.zero();
   }
-
-  @override
-  Color backgroundColor() => _backgroundColor;
 
   void _setZoom(double value) {
     camera.viewfinder.zoom = value.clamp(minZoom, maxZoom);
@@ -54,14 +52,19 @@ class PannableGame<T extends World> extends FlameGame<T>
 
   @override
   void onScaleUpdate(ScaleUpdateInfo info) {
+    // This function is called during a drag
     _panVelocity = Vector2.zero();
     final currentScale = info.scale.global;
     if (!currentScale.isIdentity()) {
       _setZoom(_startZoom * currentScale.y);
     } else {
-      camera.viewfinder.position -= info.delta.global / camera.viewfinder.zoom;
-      _clampCamera();
+      onDrag?.call(info.delta.global / camera.viewfinder.zoom);
     }
+  }
+
+  void pan(Vector2 delta) {
+    camera.viewfinder.position -= delta;
+    _clampCamera();
   }
 
   @override
@@ -74,12 +77,11 @@ class PannableGame<T extends World> extends FlameGame<T>
     super.update(dt);
 
     if (_panVelocity.length2 > 1) {
-      camera.viewfinder.position -= _panVelocity * dt / camera.viewfinder.zoom;
+      pan(_panVelocity * dt / camera.viewfinder.zoom);
       _panVelocity *= 1 - (_panFriction * dt);
       if (_panVelocity.length < _panDecayStop) {
         _panVelocity = Vector2.zero();
       }
-      _clampCamera();
     }
   }
 

@@ -21,6 +21,7 @@ class RTSGame extends PannableGame<RTSWorld> {
         worldSize: Vector2(8000, 5000),
       ) {
     eventBus = EventBus(this);
+    onDrag = _onDrag;
   }
 
   late final EventBus eventBus;
@@ -32,7 +33,12 @@ class RTSGame extends PannableGame<RTSWorld> {
     super.onZoomChanged(value);
     eventBus.emit(OnZoomChanged(value));
   }
+
+  void _onDrag(Vector2 delta) {
+    eventBus.emit(OnCanvasDrag(delta));
+  }
 }
+
 
 class RTSWorld extends World with HasGameReference<RTSGame> {
   @override

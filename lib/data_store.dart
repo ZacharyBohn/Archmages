@@ -32,4 +32,6 @@ class DataStore {
   final evilWorldColor = Colors.red;
 
   final maxWorldPopulation = 36;
+
+  bool setupComplete = false;
 }

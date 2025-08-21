@@ -136,6 +136,7 @@ class GameWorldComponent extends CircleComponent
 
   @override
   void onTapDown(TapDownEvent event) {
+    print('tap down on game world');
     _tapDownTime = DateTime.now();
     _isLongPress = false;
     super.onTapDown(event);

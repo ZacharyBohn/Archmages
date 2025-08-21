@@ -1,4 +1,5 @@
 import 'package:archmage_rts/factions.dart';
+import 'package:flame/components.dart';
 
 abstract class GameEvent {}
 
@@ -28,4 +29,9 @@ class OnWorldChangedAliance extends GameEvent {
 class OnZoomChanged extends GameEvent {
   OnZoomChanged(this.value);
   final double value;
+}
+
+class OnCanvasDrag extends GameEvent {
+  OnCanvasDrag(this.delta);
+  final Vector2 delta;
 }
