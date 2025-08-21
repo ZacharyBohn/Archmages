@@ -15,7 +15,7 @@ class PannableGame<T extends World> extends FlameGame<T>
     Color? backgroundColor,
   });
 
-  final double minZoom = 0.5;
+  final double minZoom = 0.25;
   final double maxZoom = 5.0;
   late double _startZoom;
   Vector2 _panVelocity = Vector2.zero();
