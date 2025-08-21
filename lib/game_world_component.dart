@@ -12,26 +12,20 @@ class GameWorldComponent extends CircleComponent
     with TapCallbacks, HasGameReference<RTSGame> {
   GameWorldComponent({
     required this.gameWorld,
-    Color color = Colors.green,
     super.position,
     super.priority = 1,
     super.anchor = Anchor.center,
-  }) : super(paint: Paint()..color = color, radius: gameWorld.size);
+  }) : super(radius: gameWorld.size);
 
   static GameWorldComponent from(GameWorld gameWorld) {
     return GameWorldComponent(
       gameWorld: gameWorld,
-      color: gameWorld.color,
       position: gameWorld.position,
     );
   }
 
   GameWorld gameWorld;
   TextComponent? mageCountLabel;
-  bool highlighted = false;
-  DateTime? _tapDownTime;
-  bool _isLongPress = false;
-  final longPressDelay = const Duration(milliseconds: 200);
 
   String get name => gameWorld.name;
 
@@ -81,7 +75,6 @@ class GameWorldComponent extends CircleComponent
     }
     scale = Vector2.all(game.dataStore.componentScale);
     _updateMageCounter();
-    _updateHighlightedStatus();
     _updateWorldColorAndAlliance();
   }
 
@@ -107,14 +100,6 @@ class GameWorldComponent extends CircleComponent
     gameWorld.faction = newFaction;
   }
 
-  _updateHighlightedStatus() {
-    if (game.dataStore.highlightedWorld == gameWorld.name) {
-      highlighted = true;
-    } else {
-      highlighted = false;
-    }
-  }
-
   _updateMageCounter() {
     if (gameWorld.mageCount > 0 && mageCountLabel != null) {
       mageCountLabel!.text = gameWorld.mageCount.toString();
@@ -136,23 +121,13 @@ class GameWorldComponent extends CircleComponent
 
   @override
   void onTapDown(TapDownEvent event) {
-    print('tap down on game world');
-    _tapDownTime = DateTime.now();
-    _isLongPress = false;
+    game.eventBus.emit(OnWorldTapDown(gameWorld.name));
     super.onTapDown(event);
   }
 
   @override
   void onTapUp(TapUpEvent event) {
-    if (_tapDownTime != null) {
-      final tapDuration = DateTime.now().difference(_tapDownTime!);
-      if (tapDuration >= longPressDelay) {
-        _isLongPress = true;
-      }
-    }
-    game.eventBus.emit(OnWorldTap(gameWorld.name, isLongPress: _isLongPress));
-    _tapDownTime = null;
-    _isLongPress = false;
+    // game.eventBus.emit(OnWorldTapUp(gameWorld.name));
     super.onTapUp(event);
   }
 
@@ -160,23 +135,5 @@ class GameWorldComponent extends CircleComponent
   void setColor(Color color, {Object? paintId}) {
     gameWorld.color = color;
     super.setColor(color, paintId: paintId);
-  }
-
-  @override
-  Future<void> onLoad() async {
-    super.onLoad();
-    return;
-  }
-
-  @override
-  void render(Canvas canvas) {
-    super.render(canvas);
-    if (highlighted) {
-      final borderPaint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..color = Colors.purpleAccent;
-      canvas.drawCircle(Offset(radius, radius), radius + 1, borderPaint);
-    }
   }
 }

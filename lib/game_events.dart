@@ -5,10 +5,14 @@ abstract class GameEvent {}
 
 class OnGameStart extends GameEvent {}
 
-class OnWorldTap extends GameEvent {
-  OnWorldTap(this.worldName, {this.isLongPress = false});
+class OnWorldTapDown extends GameEvent {
+  OnWorldTapDown(this.worldName);
   String worldName;
-  bool isLongPress;
+}
+
+class OnWorldTapUp extends GameEvent {
+  OnWorldTapUp(this.worldName);
+  String worldName;
 }
 
 class OnBackgroundTapped extends GameEvent {}
@@ -35,3 +39,5 @@ class OnCanvasDrag extends GameEvent {
   OnCanvasDrag(this.delta);
   final Vector2 delta;
 }
+
+class OnCanvasDragEnd extends GameEvent {}

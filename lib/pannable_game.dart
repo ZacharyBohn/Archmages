@@ -11,6 +11,7 @@ class PannableGame<T extends World> extends FlameGame<T>
     required super.world,
     required this.worldSize,
     this.onDrag,
+    this.onDragEnd,
     Color? backgroundColor,
   });
 
@@ -22,6 +23,7 @@ class PannableGame<T extends World> extends FlameGame<T>
   static const double _panFriction = 2.5;
   final Vector2 worldSize;
   void Function(Vector2 delta)? onDrag;
+  void Function()? onDragEnd;
 
   void stopPanning() {
     _panVelocity = Vector2.zero();
@@ -70,6 +72,7 @@ class PannableGame<T extends World> extends FlameGame<T>
   @override
   void onScaleEnd(ScaleEndInfo info) {
     _panVelocity = info.velocity.global;
+    onDragEnd?.call();
   }
 
   @override

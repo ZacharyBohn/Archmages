@@ -7,19 +7,26 @@ import 'package:flutter/material.dart';
 
 Future<RepeatedTextureComponent> generateBackgroundNoise(
   Size worldSize,
-  double padding,
-) async {
+  double padding, {
+  double opacity = 0.002,
+}) async {
   final noiseTile = await _generateNoiseTile(128, 128);
 
-  return RepeatedTextureComponent(noiseTile, worldSize, padding);
+  return RepeatedTextureComponent(noiseTile, worldSize, padding, opacity);
 }
 
 class RepeatedTextureComponent extends PositionComponent {
   late ui.Image _image;
   final Size worldSize;
   final double padding;
+  final double opacity;
 
-  RepeatedTextureComponent(this._image, this.worldSize, this.padding);
+  RepeatedTextureComponent(
+    this._image,
+    this.worldSize,
+    this.padding,
+    this.opacity,
+  );
 
   @override
   void render(Canvas canvas) {
@@ -35,7 +42,7 @@ class RepeatedTextureComponent extends PositionComponent {
       image: _image,
       repeat: ImageRepeat.repeat,
       fit: BoxFit.fill,
-      opacity: 0.02,
+      opacity: opacity,
     );
   }
 }

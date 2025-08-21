@@ -1,3 +1,4 @@
+import 'package:archmage_rts/drag_line_component.dart';
 import 'package:archmage_rts/main.dart';
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
@@ -24,10 +25,6 @@ class EventBus {
 
   /// Receive all incoming events through here
   void emit(GameEvent event) {
-    if (event is OnWorldTap) {
-      _handleWorldTap(event);
-      return;
-    }
     if (event is OnBackgroundTapped) {
       _handleOnBackgroundTapped();
       return;
@@ -54,13 +51,19 @@ class EventBus {
     if (event is OnCanvasDrag) {
       _handleCanvasDrag(event);
     }
+    if (event is OnCanvasDragEnd) {
+      _handleCanvasDragEnd();
+    }
+    if (event is OnWorldTapDown) {
+      _handleWorldTapDown(event);
+      return;
+    }
+    if (event is OnWorldTapUp) {
+      _handleWorldTapUp(event);
+    }
   }
 
-  void _handleCanvasDrag(OnCanvasDrag event) {
-    game.pan(event.delta);
-  }
-
-  _handleZoomChange(OnZoomChanged event) {
+  void _handleZoomChange(OnZoomChanged event) {
     if (event.value <= 1.0) {
       final maxScale =
           game.dataStore.minDistanceBetweenWorlds /
@@ -77,6 +80,7 @@ class EventBus {
       await generateBackgroundNoise(
         Size(game.worldSize.x, game.worldSize.y),
         game.dataStore.worldBoundaryPadding,
+        opacity: 0.1,
       ),
     );
     game.world.add(
@@ -141,23 +145,31 @@ class EventBus {
     game.stopPanning();
   }
 
-  void _handleWorldTap(OnWorldTap event) {
-    if (game.dataStore.highlightedWorld == event.worldName) {
-      game.dataStore.highlightedWorld = null;
-      return;
-    }
-    if (game.dataStore.highlightedWorld != null) {
-      _moveMage(
-        from: game.dataStore.highlightedWorld!,
-        to: event.worldName,
-        moveMultiple: event.isLongPress,
+  void _handleCanvasDrag(OnCanvasDrag event) {
+    if (game.dataStore.dragFromWorld == null) {
+      game.pan(event.delta);
+    } else if (game.dataStore.dragLine == null) {
+      final fromWorldPosition = game.dataStore.dragFromWorld!.position;
+      game.dataStore.dragLine = DragLineComponent(
+        origin: fromWorldPosition,
+        end: fromWorldPosition,
       );
-      // game.dataStore.highlightedWorld = null;
-      return;
+    } else {
+      game.dataStore.dragLine?.end += event.delta;
     }
-    game.dataStore.highlightedWorld = event.worldName;
-    return;
   }
+
+  void _handleCanvasDragEnd() {
+    game.dataStore.dragLine = null;
+    game.dataStore.dragFromWorld = null;
+  }
+
+  void _handleWorldTapDown(OnWorldTapDown event) {
+    // _moveMage(from: game.dataStore.highlightedWorld!, to: event.worldName);
+    game.dataStore.dragFromWorld = game.dataStore.gameWorlds[event.worldName];
+  }
+
+  void _handleWorldTapUp(OnWorldTapUp event) {}
 
   void _handleGameTick(OnGameTick event) {
     if (!game.dataStore.setupComplete) {
@@ -165,7 +177,6 @@ class EventBus {
     }
     game.dataStore.mageGenerator.update(event.dt);
     game.dataStore.evilMageAI.update(event.dt);
-    return;
   }
 
   void _handleEvilMageAI() {
@@ -182,26 +193,18 @@ class EventBus {
             // Pick a random non-evil adjacent world
             final targetWorldName =
                 possibleTargets[game.random.nextInt(possibleTargets.length)];
-            _moveMage(
-              from: world.name,
-              to: targetWorldName,
-              moveMultiple: false,
-            );
+            _moveMage(from: world.name, to: targetWorldName);
           }
         }
       }
     }
   }
 
-  void _moveMage({
-    required String from,
-    required String to,
-    required bool moveMultiple,
-  }) {
+  void _moveMage({required String from, required String to}) {
     final fromWorld = game.dataStore.gameWorlds[from]!;
     final toWorld = game.dataStore.gameWorlds[to]!;
     if (fromWorld.connectedWorlds.contains(to) && fromWorld.mageCount > 0) {
-      final amountToMove = moveMultiple ? fromWorld.mageCount - 1 : 1;
+      final amountToMove = 1;
       final count = fromWorld.decrementMages(amountToMove);
       if (count > 0) {
         final mage = MageComponent(

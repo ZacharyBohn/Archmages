@@ -1,3 +1,4 @@
+import 'package:archmage_rts/drag_line_component.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart' show Color, Colors;
 
@@ -18,8 +19,6 @@ class DataStore {
   final double minDistanceBetweenWorlds = 150.0;
   final double worldRadius = 45.0;
 
-  String? highlightedWorld;
-
   // Only gonna be used temporarily =0
   // #famousLastWords
   late final Timer mageGenerator;
@@ -34,4 +33,7 @@ class DataStore {
   final maxWorldPopulation = 36;
 
   bool setupComplete = false;
+
+  GameWorldComponent? dragFromWorld;
+  DragLineComponent? dragLine;
 }
