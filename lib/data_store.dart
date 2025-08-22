@@ -36,4 +36,8 @@ class DataStore {
 
   GameWorldComponent? dragFromWorld;
   DragLineComponent? dragLine;
+
+  final Map<String, String> moveCommandsMapping = {};
+
+  final Map<String, Timer> moveCommandTimers = {};
 }

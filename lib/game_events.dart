@@ -41,3 +41,9 @@ class OnCanvasDrag extends GameEvent {
 }
 
 class OnCanvasDragEnd extends GameEvent {}
+
+class OnCreateMoveCommand extends GameEvent {
+  OnCreateMoveCommand({required this.from, required this.to});
+  final String from;
+  final String to;
+}

@@ -58,6 +58,30 @@ class EventBus {
       _handleWorldTapDown(event);
       return;
     }
+    if (event is OnCreateMoveCommand) {
+      _handleMoveCommand(event);
+    }
+  }
+
+  void _handleMoveCommand(OnCreateMoveCommand event) {
+    if (game.dataStore.moveCommandsMapping.containsKey(event.to) &&
+        game.dataStore.moveCommandsMapping[event.to] == event.from) {
+      game.dataStore.moveCommandsMapping.remove(event.to);
+      game.dataStore.moveCommandTimers['${event.from}.${event.to}']?.stop();
+      game.dataStore.moveCommandTimers.remove('${event.from}.${event.to}');
+    } else {
+      game.dataStore.moveCommandsMapping[event.from] = event.to;
+      final timer = Timer(
+        3,
+        onTick: () {
+          // TODO: make this emit an event
+          _moveMage(from: event.from, to: event.to);
+        },
+        repeat: true,
+        autoStart: true,
+      );
+      game.dataStore.moveCommandTimers['${event.from}.${event.to}'] = timer;
+    }
   }
 
   void _handleZoomChange(OnZoomChanged event) {
@@ -123,8 +147,8 @@ class EventBus {
         emit(OnEvilMageAITick());
       },
       repeat: true,
+      autoStart: true,
     );
-    game.dataStore.evilMageAI.start();
     game.dataStore.setupComplete = true;
   }
 
@@ -165,7 +189,12 @@ class EventBus {
           .firstOrNull
           ?.name;
       if (toWorldName != null) {
-        _moveMage(from: game.dataStore.dragFromWorld!.name, to: toWorldName);
+        emit(
+          OnCreateMoveCommand(
+            from: game.dataStore.dragFromWorld!.name,
+            to: toWorldName,
+          ),
+        );
       }
       game.world.remove(game.dataStore.dragLine!);
     }
@@ -183,6 +212,9 @@ class EventBus {
     }
     game.dataStore.mageGenerator.update(event.dt);
     game.dataStore.evilMageAI.update(event.dt);
+    for (final timer in game.dataStore.moveCommandTimers.values) {
+      timer.update(event.dt);
+    }
   }
 
   void _handleEvilMageAI() {
