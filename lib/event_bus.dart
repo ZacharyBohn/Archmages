@@ -75,7 +75,9 @@ class EventBus {
         3,
         onTick: () {
           // TODO: make this emit an event
-          _moveMage(from: event.from, to: event.to);
+          if (game.dataStore.gameWorlds[event.from]!.mageCount > 2) {
+            _moveMage(from: event.from, to: event.to);
+          }
         },
         repeat: true,
         autoStart: true,
