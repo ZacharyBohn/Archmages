@@ -64,17 +64,26 @@ class EventBus {
   }
 
   void _handleMoveCommand(OnCreateMoveCommand event) {
+    final connectionName = ([event.from, event.to]..sort()).toString();
+    final connection =
+        game.dataStore.connections[connectionName] as LineComponent?;
+
     if (game.dataStore.moveCommandsMapping.containsKey(event.to) &&
         game.dataStore.moveCommandsMapping[event.to] == event.from) {
       game.dataStore.moveCommandsMapping.remove(event.to);
-      game.dataStore.moveCommandTimers['${event.from}.${event.to}']?.stop();
-      game.dataStore.moveCommandTimers.remove('${event.from}.${event.to}');
+      game.dataStore.moveCommandTimers['${event.to}.${event.from}']?.stop();
+      game.dataStore.moveCommandTimers.remove('${event.to}.${event.from}');
+      if (connection != null) {
+        connection.paint.color = const Color(0xFFBBBBBB);
+      }
     } else {
       game.dataStore.moveCommandsMapping[event.from] = event.to;
       final timer = Timer(
         3,
         onTick: () {
           // TODO: make this emit an event
+          // TODO: make it take into account the size of the world?
+          // TODO: take into account overflow?
           if (game.dataStore.gameWorlds[event.from]!.mageCount > 2) {
             _moveMage(from: event.from, to: event.to);
           }
@@ -83,6 +92,10 @@ class EventBus {
         autoStart: true,
       );
       game.dataStore.moveCommandTimers['${event.from}.${event.to}'] = timer;
+      _moveMage(from: event.from, to: event.to);
+      if (connection != null) {
+        connection.paint.color = Colors.green;
+      }
     }
   }
 
