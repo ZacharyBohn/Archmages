@@ -81,6 +81,8 @@ class EventBus {
       final timer = Timer(
         3,
         onTick: () {
+          // TODO: make this less buggy. GameWorldComponent should use
+          // a state machine. Right now it's getting out of sync.
           // TODO: make this emit an event
           // TODO: make it take into account the size of the world?
           // TODO: take into account overflow?
