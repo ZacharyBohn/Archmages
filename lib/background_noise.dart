@@ -6,24 +6,24 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
 Future<RepeatedTextureComponent> generateBackgroundNoise(
-  Size worldSize,
+  Size size,
   double padding, {
   double opacity = 0.002,
 }) async {
-  final noiseTile = await _generateNoiseTile(128, 128);
+  final noiseTile = await _generateNoiseTile(512, 512);
 
-  return RepeatedTextureComponent(noiseTile, worldSize, padding, opacity);
+  return RepeatedTextureComponent(noiseTile, size, padding, opacity);
 }
 
 class RepeatedTextureComponent extends PositionComponent {
   late ui.Image _image;
-  final Size worldSize;
+  final Size textureSize;
   final double padding;
   final double opacity;
 
   RepeatedTextureComponent(
     this._image,
-    this.worldSize,
+    this.textureSize,
     this.padding,
     this.opacity,
   );
@@ -31,10 +31,10 @@ class RepeatedTextureComponent extends PositionComponent {
   @override
   void render(Canvas canvas) {
     final rect = Rect.fromLTWH(
-      -worldSize.width / 2 - padding,
-      -worldSize.height / 2 - padding,
-      worldSize.width + padding * 2,
-      worldSize.height + padding * 2,
+      -textureSize.width / 2 - padding,
+      -textureSize.height / 2 - padding,
+      textureSize.width + padding * 2,
+      textureSize.height + padding * 2,
     );
     paintImage(
       canvas: canvas,

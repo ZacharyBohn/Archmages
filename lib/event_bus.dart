@@ -116,7 +116,7 @@ class EventBus {
   Future<void> _handleGameStart() async {
     game.world.add(
       await generateBackgroundNoise(
-        Size(game.worldSize.x, game.worldSize.y),
+        Size(game.worldSize.x * 2, game.worldSize.y * 2),
         game.dataStore.worldBoundaryPadding,
         opacity: 0.1,
       ),
