@@ -12,11 +12,13 @@ class PannableGame<T extends World> extends FlameGame<T>
     required this.worldSize,
     this.onDrag,
     this.onDragEnd,
+    this.freedomPadding = 500.0,
     Color? backgroundColor,
   });
 
   final double minZoom = 0.25;
   final double maxZoom = 5.0;
+  final double freedomPadding;
   late double _startZoom;
   Vector2 _panVelocity = Vector2.zero();
   final _panDecayStop = 7.0;
@@ -95,10 +97,10 @@ class PannableGame<T extends World> extends FlameGame<T>
     final halfHeight = visibleRect.height / 2;
 
     // Clamp camera center position so the view doesn't leave world bounds
-    final minX = -(halfWidth + worldSize.x / 2);
-    final maxX = halfWidth + worldSize.x / 2;
-    final minY = -(halfHeight + worldSize.y / 2);
-    final maxY = halfHeight + worldSize.y / 2;
+    final minX = (-worldSize.x / 2 + halfWidth) - freedomPadding;
+    final maxX = (worldSize.x / 2 - halfWidth) + freedomPadding;
+    final minY = (-worldSize.y / 2 + halfHeight) - freedomPadding;
+    final maxY = (worldSize.y / 2 - halfHeight) + freedomPadding;
 
     final camX = camera.viewfinder.position.x;
     final camY = camera.viewfinder.position.y;
