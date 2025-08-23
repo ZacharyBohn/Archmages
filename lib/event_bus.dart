@@ -86,15 +86,25 @@ class EventBus {
           // TODO: make this emit an event
           // TODO: make it take into account the size of the world?
           // TODO: take into account overflow?
-          if (game.dataStore.gameWorlds[event.from]!.mageCount > 2) {
-            _moveMage(from: event.from, to: event.to);
+          final mageCount = game.dataStore.gameWorlds[event.from]!.mageCount;
+          if (mageCount > 2) {
+            _moveMage(
+              from: event.from,
+              to: event.to,
+              amountToMove: (mageCount / 10).ceil(),
+            );
           }
         },
         repeat: true,
         autoStart: true,
       );
       game.dataStore.moveCommandTimers['${event.from}.${event.to}'] = timer;
-      _moveMage(from: event.from, to: event.to);
+      final mageCount = game.dataStore.gameWorlds[event.from]!.mageCount;
+      _moveMage(
+        from: event.from,
+        to: event.to,
+        amountToMove: (mageCount / 10).ceil(),
+      );
       if (connection != null) {
         connection.paint.color = Colors.green;
       }
@@ -241,25 +251,33 @@ class EventBus {
         if (game.random.nextDouble() < 0.5) {
           final possibleTargets = world.connectedWorlds.where((worldName) {
             final connectedWorld = game.dataStore.gameWorlds[worldName]!;
-            return connectedWorld.gameWorld.faction != Faction.evil;
+            return connectedWorld.gameWorld.faction != Faction.evil ||
+                connectedWorld.mageCount < (world.mageCount - 4);
           }).toList();
 
           if (possibleTargets.isNotEmpty) {
             // Pick a random non-evil adjacent world
             final targetWorldName =
                 possibleTargets[game.random.nextInt(possibleTargets.length)];
-            _moveMage(from: world.name, to: targetWorldName);
+            _moveMage(
+              from: world.name,
+              to: targetWorldName,
+              amountToMove: (world.mageCount / 10).ceil(),
+            );
           }
         }
       }
     }
   }
 
-  void _moveMage({required String from, required String to}) {
+  void _moveMage({
+    required String from,
+    required String to,
+    int amountToMove = 1,
+  }) {
     final fromWorld = game.dataStore.gameWorlds[from]!;
     final toWorld = game.dataStore.gameWorlds[to]!;
     if (fromWorld.connectedWorlds.contains(to) && fromWorld.mageCount > 0) {
-      final amountToMove = 1;
       final count = fromWorld.decrementMages(amountToMove);
       if (count > 0) {
         final mage = MageComponent(
