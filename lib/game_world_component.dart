@@ -15,7 +15,7 @@ class GameWorldComponent extends CircleComponent
     super.position,
     super.priority = 1,
     super.anchor = Anchor.center,
-  }) : super(radius: gameWorld.size);
+  }) : super(radius: gameWorld.size, paint: Paint()..color = gameWorld.color);
 
   static GameWorldComponent from(GameWorld gameWorld) {
     return GameWorldComponent(
@@ -35,15 +35,16 @@ class GameWorldComponent extends CircleComponent
 
   void setMageCount(int count, Faction faction) {
     gameWorld.mageCount = count;
-    gameWorld.faction = faction;
-    _updateWorldColorAndAlliance();
+    _updateWorldColorAndAlliance(faction);
   }
 
   int decrementMages([int count = 1]) {
     if (gameWorld.mageCount > 0) {
       final actualCount = min(count, gameWorld.mageCount);
       gameWorld.mageCount -= actualCount;
-      _updateWorldColorAndAlliance();
+      if (gameWorld.mageCount == 0) {
+        _updateWorldColorAndAlliance(Faction.neutral);
+      }
       return actualCount;
     }
     return 0;
@@ -58,13 +59,13 @@ class GameWorldComponent extends CircleComponent
       gameWorld.mageCount += count;
     } else {
       if (count > gameWorld.mageCount) {
+        _updateWorldColorAndAlliance(faction);
         gameWorld.mageCount = count - gameWorld.mageCount;
         gameWorld.faction = faction;
       } else {
         gameWorld.mageCount -= count;
       }
     }
-    _updateWorldColorAndAlliance();
   }
 
   @override
@@ -75,24 +76,22 @@ class GameWorldComponent extends CircleComponent
     }
     scale = Vector2.all(game.dataStore.componentScale);
     _updateMageCounter();
-    _updateWorldColorAndAlliance();
   }
 
-  void _updateWorldColorAndAlliance() {
+  void _updateWorldColorAndAlliance(Faction newFaction) {
     final oldFaction = gameWorld.faction;
-    Faction newFaction;
-    if (gameWorld.faction == Faction.evil) {
-      setColor(Colors.red);
-      newFaction = Faction.evil;
-    } else if (gameWorld.faction == Faction.good) {
-      setColor(Colors.green);
-      newFaction = Faction.good;
-    } else {
-      setColor(game.dataStore.defaultWorldColor);
-      newFaction = Faction.neutral;
-    }
     if (oldFaction == newFaction) {
       return;
+    }
+    if (newFaction == Faction.evil) {
+      setColor(Colors.red);
+      newFaction = Faction.evil;
+    } else if (newFaction == Faction.good) {
+      setColor(Colors.green);
+      newFaction = Faction.good;
+    } else if (newFaction == Faction.neutral) {
+      setColor(game.dataStore.defaultWorldColor);
+      newFaction = Faction.neutral;
     }
     game.eventBus.emit(
       OnWorldChangedAliance(oldFaction: oldFaction, newFaction: newFaction),

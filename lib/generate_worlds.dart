@@ -2,7 +2,6 @@ import 'dart:math';
 import 'dart:ui' show Color;
 
 import 'package:flame/components.dart';
-import 'package:flutter/material.dart' show Colors;
 
 import 'game_world.dart';
 
@@ -12,7 +11,7 @@ List<GameWorld> generateWorlds({
   required Vector2 mapSize,
   required int worldCount,
   required int maxConnections,
-  Color? worldColorOverride,
+  required Color worldColorOverride,
   double worldSize = 30.0,
   double minConnectionAngle = 15.0,
   bool ensureConnected = true,
@@ -46,8 +45,7 @@ List<GameWorld> generateWorlds({
         'W${worlds.length + 1}',
         worldSize,
         newPosition,
-        worldColorOverride ??
-            Colors.primaries[random.nextInt(Colors.primaries.length)],
+        worldColorOverride,
         connectedWorlds: [],
       );
       worlds.add(newWorld);
