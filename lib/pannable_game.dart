@@ -10,24 +10,26 @@ class PannableGame<T extends World> extends FlameGame<T>
   PannableGame({
     required super.world,
     required this.worldSize,
+    this.onDrag,
+    this.onDragEnd,
+    this.freedomPadding = 500.0,
     Color? backgroundColor,
-  }) : _backgroundColor = backgroundColor ?? const Color(0xFFBBBBBB);
+  });
 
-  final Color _backgroundColor;
-  final double minZoom = 0.5;
+  final double minZoom = 0.25;
   final double maxZoom = 5.0;
+  final double freedomPadding;
   late double _startZoom;
   Vector2 _panVelocity = Vector2.zero();
   final _panDecayStop = 7.0;
   static const double _panFriction = 2.5;
   final Vector2 worldSize;
+  void Function(Vector2 delta)? onDrag;
+  void Function()? onDragEnd;
 
   void stopPanning() {
     _panVelocity = Vector2.zero();
   }
-
-  @override
-  Color backgroundColor() => _backgroundColor;
 
   void _setZoom(double value) {
     camera.viewfinder.zoom = value.clamp(minZoom, maxZoom);
@@ -54,19 +56,25 @@ class PannableGame<T extends World> extends FlameGame<T>
 
   @override
   void onScaleUpdate(ScaleUpdateInfo info) {
+    // This function is called during a drag
     _panVelocity = Vector2.zero();
     final currentScale = info.scale.global;
     if (!currentScale.isIdentity()) {
       _setZoom(_startZoom * currentScale.y);
     } else {
-      camera.viewfinder.position -= info.delta.global / camera.viewfinder.zoom;
-      _clampCamera();
+      onDrag?.call(info.delta.global / camera.viewfinder.zoom);
     }
+  }
+
+  void pan(Vector2 delta) {
+    camera.viewfinder.position -= delta;
+    _clampCamera();
   }
 
   @override
   void onScaleEnd(ScaleEndInfo info) {
     _panVelocity = info.velocity.global;
+    onDragEnd?.call();
   }
 
   @override
@@ -74,12 +82,11 @@ class PannableGame<T extends World> extends FlameGame<T>
     super.update(dt);
 
     if (_panVelocity.length2 > 1) {
-      camera.viewfinder.position -= _panVelocity * dt / camera.viewfinder.zoom;
+      pan(_panVelocity * dt / camera.viewfinder.zoom);
       _panVelocity *= 1 - (_panFriction * dt);
       if (_panVelocity.length < _panDecayStop) {
         _panVelocity = Vector2.zero();
       }
-      _clampCamera();
     }
   }
 
@@ -90,10 +97,10 @@ class PannableGame<T extends World> extends FlameGame<T>
     final halfHeight = visibleRect.height / 2;
 
     // Clamp camera center position so the view doesn't leave world bounds
-    final minX = -(halfWidth + worldSize.x / 2);
-    final maxX = halfWidth + worldSize.x / 2;
-    final minY = -(halfHeight + worldSize.y / 2);
-    final maxY = halfHeight + worldSize.y / 2;
+    final minX = (-worldSize.x / 2 + halfWidth) - freedomPadding;
+    final maxX = (worldSize.x / 2 - halfWidth) + freedomPadding;
+    final minY = (-worldSize.y / 2 + halfHeight) - freedomPadding;
+    final maxY = (worldSize.y / 2 - halfHeight) + freedomPadding;
 
     final camX = camera.viewfinder.position.x;
     final camY = camera.viewfinder.position.y;

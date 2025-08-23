@@ -1,14 +1,19 @@
 import 'package:archmage_rts/factions.dart';
+import 'package:flame/components.dart';
 
 abstract class GameEvent {}
 
 class OnGameStart extends GameEvent {}
 
-class OnWorldTap extends GameEvent {
-  OnWorldTap(this.worldName, {this.isLongPress = false});
+class OnWorldTapDown extends GameEvent {
+  OnWorldTapDown(this.worldName);
   String worldName;
-  bool isLongPress;
 }
+
+// class OnWorldTapUp extends GameEvent {
+//   OnWorldTapUp(this.worldName);
+//   String worldName;
+// }
 
 class OnBackgroundTapped extends GameEvent {}
 
@@ -28,4 +33,17 @@ class OnWorldChangedAliance extends GameEvent {
 class OnZoomChanged extends GameEvent {
   OnZoomChanged(this.value);
   final double value;
+}
+
+class OnCanvasDrag extends GameEvent {
+  OnCanvasDrag(this.delta);
+  final Vector2 delta;
+}
+
+class OnCanvasDragEnd extends GameEvent {}
+
+class OnCreateMoveCommand extends GameEvent {
+  OnCreateMoveCommand({required this.from, required this.to});
+  final String from;
+  final String to;
 }

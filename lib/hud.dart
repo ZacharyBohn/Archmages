@@ -29,6 +29,7 @@ class Hud extends PositionComponent with HasGameReference<RTSGame> {
 
   @override
   void update(double dt) {
+    evilWorldCountComponent.position = Vector2(game.size.x - 10, 10);
     goodWorldCountComponent.text =
         'Good Worlds: ${game.dataStore.goodWorldCount}';
     evilWorldCountComponent.text =

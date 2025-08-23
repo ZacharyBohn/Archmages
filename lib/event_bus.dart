@@ -1,3 +1,4 @@
+import 'package:archmage_rts/drag_line_component.dart';
 import 'package:archmage_rts/main.dart';
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
@@ -24,10 +25,6 @@ class EventBus {
 
   /// Receive all incoming events through here
   void emit(GameEvent event) {
-    if (event is OnWorldTap) {
-      _handleWorldTap(event);
-      return;
-    }
     if (event is OnBackgroundTapped) {
       _handleOnBackgroundTapped();
       return;
@@ -51,9 +48,60 @@ class EventBus {
     if (event is OnZoomChanged) {
       _handleZoomChange(event);
     }
+    if (event is OnCanvasDrag) {
+      _handleCanvasDrag(event);
+    }
+    if (event is OnCanvasDragEnd) {
+      _handleCanvasDragEnd();
+    }
+    if (event is OnWorldTapDown) {
+      _handleWorldTapDown(event);
+      return;
+    }
+    if (event is OnCreateMoveCommand) {
+      _handleMoveCommand(event);
+    }
   }
 
-  _handleZoomChange(OnZoomChanged event) {
+  void _handleMoveCommand(OnCreateMoveCommand event) {
+    final connectionName = ([event.from, event.to]..sort()).toString();
+    final connection =
+        game.dataStore.connections[connectionName] as LineComponent?;
+
+    if (game.dataStore.moveCommandsMapping.containsKey(event.to) &&
+        game.dataStore.moveCommandsMapping[event.to] == event.from) {
+      game.dataStore.moveCommandsMapping.remove(event.to);
+      game.dataStore.moveCommandTimers['${event.to}.${event.from}']?.stop();
+      game.dataStore.moveCommandTimers.remove('${event.to}.${event.from}');
+      if (connection != null) {
+        connection.paint.color = const Color(0xFFBBBBBB);
+      }
+    } else {
+      game.dataStore.moveCommandsMapping[event.from] = event.to;
+      final timer = Timer(
+        3,
+        onTick: () {
+          // TODO: make this less buggy. GameWorldComponent should use
+          // a state machine. Right now it's getting out of sync.
+          // TODO: make this emit an event
+          // TODO: make it take into account the size of the world?
+          // TODO: take into account overflow?
+          if (game.dataStore.gameWorlds[event.from]!.mageCount > 2) {
+            _moveMage(from: event.from, to: event.to);
+          }
+        },
+        repeat: true,
+        autoStart: true,
+      );
+      game.dataStore.moveCommandTimers['${event.from}.${event.to}'] = timer;
+      _moveMage(from: event.from, to: event.to);
+      if (connection != null) {
+        connection.paint.color = Colors.green;
+      }
+    }
+  }
+
+  void _handleZoomChange(OnZoomChanged event) {
     if (event.value <= 1.0) {
       final maxScale =
           game.dataStore.minDistanceBetweenWorlds /
@@ -68,8 +116,9 @@ class EventBus {
   Future<void> _handleGameStart() async {
     game.world.add(
       await generateBackgroundNoise(
-        Size(game.worldSize.x, game.worldSize.y),
+        Size(game.worldSize.x * 2, game.worldSize.y * 2),
         game.dataStore.worldBoundaryPadding,
+        opacity: 0.1,
       ),
     );
     game.world.add(
@@ -115,8 +164,9 @@ class EventBus {
         emit(OnEvilMageAITick());
       },
       repeat: true,
+      autoStart: true,
     );
-    game.dataStore.evilMageAI.start();
+    game.dataStore.setupComplete = true;
   }
 
   void _handleMageGeneratorTick() {
@@ -133,28 +183,55 @@ class EventBus {
     game.stopPanning();
   }
 
-  void _handleWorldTap(OnWorldTap event) {
-    if (game.dataStore.highlightedWorld == event.worldName) {
-      game.dataStore.highlightedWorld = null;
-      return;
-    }
-    if (game.dataStore.highlightedWorld != null) {
-      _moveMage(
-        from: game.dataStore.highlightedWorld!,
-        to: event.worldName,
-        moveMultiple: event.isLongPress,
+  void _handleCanvasDrag(OnCanvasDrag event) {
+    if (game.dataStore.dragFromWorld == null) {
+      game.pan(event.delta);
+    } else if (game.dataStore.dragLine == null) {
+      final fromWorldPosition = game.dataStore.dragFromWorld!.position;
+      game.dataStore.dragLine = DragLineComponent(
+        origin: fromWorldPosition,
+        end: fromWorldPosition,
       );
-      // game.dataStore.highlightedWorld = null;
-      return;
+      game.world.add(game.dataStore.dragLine!);
+    } else {
+      game.dataStore.dragLine?.end += event.delta;
     }
-    game.dataStore.highlightedWorld = event.worldName;
-    return;
+  }
+
+  void _handleCanvasDragEnd() {
+    if (game.dataStore.dragLine != null) {
+      final toWorldName = game.world
+          .componentsAtPoint(game.dataStore.dragLine!.end)
+          .whereType<GameWorldComponent>()
+          .firstOrNull
+          ?.name;
+      if (toWorldName != null) {
+        emit(
+          OnCreateMoveCommand(
+            from: game.dataStore.dragFromWorld!.name,
+            to: toWorldName,
+          ),
+        );
+      }
+      game.world.remove(game.dataStore.dragLine!);
+    }
+    game.dataStore.dragLine = null;
+    game.dataStore.dragFromWorld = null;
+  }
+
+  void _handleWorldTapDown(OnWorldTapDown event) {
+    game.dataStore.dragFromWorld = game.dataStore.gameWorlds[event.worldName];
   }
 
   void _handleGameTick(OnGameTick event) {
+    if (!game.dataStore.setupComplete) {
+      return;
+    }
     game.dataStore.mageGenerator.update(event.dt);
     game.dataStore.evilMageAI.update(event.dt);
-    return;
+    for (final timer in game.dataStore.moveCommandTimers.values) {
+      timer.update(event.dt);
+    }
   }
 
   void _handleEvilMageAI() {
@@ -162,9 +239,7 @@ class EventBus {
       if (world.gameWorld.faction == Faction.evil && world.mageCount > 1) {
         // 50% chance to send an evil mage
         if (game.random.nextDouble() < 0.5) {
-          final possibleTargets = world.connectedWorlds.where((
-            worldName,
-          ) {
+          final possibleTargets = world.connectedWorlds.where((worldName) {
             final connectedWorld = game.dataStore.gameWorlds[worldName]!;
             return connectedWorld.gameWorld.faction != Faction.evil;
           }).toList();
@@ -172,25 +247,19 @@ class EventBus {
           if (possibleTargets.isNotEmpty) {
             // Pick a random non-evil adjacent world
             final targetWorldName =
-                possibleTargets[game.random.nextInt(
-                  possibleTargets.length,
-                )];
-            _moveMage(from: world.name, to: targetWorldName, moveMultiple: false);
+                possibleTargets[game.random.nextInt(possibleTargets.length)];
+            _moveMage(from: world.name, to: targetWorldName);
           }
         }
       }
     }
   }
 
-  void _moveMage({
-    required String from,
-    required String to,
-    required bool moveMultiple,
-  }) {
+  void _moveMage({required String from, required String to}) {
     final fromWorld = game.dataStore.gameWorlds[from]!;
     final toWorld = game.dataStore.gameWorlds[to]!;
     if (fromWorld.connectedWorlds.contains(to) && fromWorld.mageCount > 0) {
-      final amountToMove = moveMultiple ? fromWorld.mageCount - 1 : 1;
+      final amountToMove = 1;
       final count = fromWorld.decrementMages(amountToMove);
       if (count > 0) {
         final mage = MageComponent(

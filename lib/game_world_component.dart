@@ -12,26 +12,20 @@ class GameWorldComponent extends CircleComponent
     with TapCallbacks, HasGameReference<RTSGame> {
   GameWorldComponent({
     required this.gameWorld,
-    Color color = Colors.green,
     super.position,
     super.priority = 1,
     super.anchor = Anchor.center,
-  }) : super(paint: Paint()..color = color, radius: gameWorld.size);
+  }) : super(radius: gameWorld.size, paint: Paint()..color = gameWorld.color);
 
   static GameWorldComponent from(GameWorld gameWorld) {
     return GameWorldComponent(
       gameWorld: gameWorld,
-      color: gameWorld.color,
       position: gameWorld.position,
     );
   }
 
   GameWorld gameWorld;
   TextComponent? mageCountLabel;
-  bool highlighted = false;
-  DateTime? _tapDownTime;
-  bool _isLongPress = false;
-  final longPressDelay = const Duration(milliseconds: 200);
 
   String get name => gameWorld.name;
 
@@ -41,15 +35,16 @@ class GameWorldComponent extends CircleComponent
 
   void setMageCount(int count, Faction faction) {
     gameWorld.mageCount = count;
-    gameWorld.faction = faction;
-    _updateWorldColorAndAlliance();
+    _updateWorldColorAndAlliance(faction);
   }
 
   int decrementMages([int count = 1]) {
     if (gameWorld.mageCount > 0) {
       final actualCount = min(count, gameWorld.mageCount);
       gameWorld.mageCount -= actualCount;
-      _updateWorldColorAndAlliance();
+      if (gameWorld.mageCount == 0) {
+        _updateWorldColorAndAlliance(Faction.neutral);
+      }
       return actualCount;
     }
     return 0;
@@ -64,13 +59,13 @@ class GameWorldComponent extends CircleComponent
       gameWorld.mageCount += count;
     } else {
       if (count > gameWorld.mageCount) {
+        _updateWorldColorAndAlliance(faction);
         gameWorld.mageCount = count - gameWorld.mageCount;
         gameWorld.faction = faction;
       } else {
         gameWorld.mageCount -= count;
       }
     }
-    _updateWorldColorAndAlliance();
   }
 
   @override
@@ -81,38 +76,27 @@ class GameWorldComponent extends CircleComponent
     }
     scale = Vector2.all(game.dataStore.componentScale);
     _updateMageCounter();
-    _updateHighlightedStatus();
-    _updateWorldColorAndAlliance();
   }
 
-  void _updateWorldColorAndAlliance() {
+  void _updateWorldColorAndAlliance(Faction newFaction) {
     final oldFaction = gameWorld.faction;
-    Faction newFaction;
-    if (gameWorld.faction == Faction.evil) {
-      setColor(Colors.red);
-      newFaction = Faction.evil;
-    } else if (gameWorld.faction == Faction.good) {
-      setColor(Colors.green);
-      newFaction = Faction.good;
-    } else {
-      setColor(game.dataStore.defaultWorldColor);
-      newFaction = Faction.neutral;
-    }
     if (oldFaction == newFaction) {
       return;
+    }
+    if (newFaction == Faction.evil) {
+      setColor(Colors.red);
+      newFaction = Faction.evil;
+    } else if (newFaction == Faction.good) {
+      setColor(Colors.green);
+      newFaction = Faction.good;
+    } else if (newFaction == Faction.neutral) {
+      setColor(game.dataStore.defaultWorldColor);
+      newFaction = Faction.neutral;
     }
     game.eventBus.emit(
       OnWorldChangedAliance(oldFaction: oldFaction, newFaction: newFaction),
     );
     gameWorld.faction = newFaction;
-  }
-
-  _updateHighlightedStatus() {
-    if (game.dataStore.highlightedWorld == gameWorld.name) {
-      highlighted = true;
-    } else {
-      highlighted = false;
-    }
   }
 
   _updateMageCounter() {
@@ -136,46 +120,13 @@ class GameWorldComponent extends CircleComponent
 
   @override
   void onTapDown(TapDownEvent event) {
-    _tapDownTime = DateTime.now();
-    _isLongPress = false;
+    game.eventBus.emit(OnWorldTapDown(gameWorld.name));
     super.onTapDown(event);
-  }
-
-  @override
-  void onTapUp(TapUpEvent event) {
-    if (_tapDownTime != null) {
-      final tapDuration = DateTime.now().difference(_tapDownTime!);
-      if (tapDuration >= longPressDelay) {
-        _isLongPress = true;
-      }
-    }
-    game.eventBus.emit(OnWorldTap(gameWorld.name, isLongPress: _isLongPress));
-    _tapDownTime = null;
-    _isLongPress = false;
-    super.onTapUp(event);
   }
 
   @override
   void setColor(Color color, {Object? paintId}) {
     gameWorld.color = color;
     super.setColor(color, paintId: paintId);
-  }
-
-  @override
-  Future<void> onLoad() async {
-    super.onLoad();
-    return;
-  }
-
-  @override
-  void render(Canvas canvas) {
-    super.render(canvas);
-    if (highlighted) {
-      final borderPaint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..color = Colors.purpleAccent;
-      canvas.drawCircle(Offset(radius, radius), radius + 1, borderPaint);
-    }
   }
 }
