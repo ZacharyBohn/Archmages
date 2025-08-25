@@ -63,6 +63,9 @@ class EventBus {
     if (event is OnCreateMoveCommand) {
       _handleMoveCommand(event);
     }
+    if (event is OnForwardCommandProcessTick) {
+      _handleOnForwardCommandProcessTick(event);
+    }
   }
 
   void _handleMoveCommand(OnCreateMoveCommand event) {
@@ -83,21 +86,8 @@ class EventBus {
       final timer = Timer(
         3,
         onTick: () {
-          // TODO: make this less buggy. GameWorldComponent should use
-          // a state machine. Right now it's getting out of sync.
           // TODO: make this emit an event
-          // TODO: make it take into account the size of the world?
-          // TODO: take into account overflow?
-          final mageCount =
-              game.dataStore.gameWorlds[event.from]!.gameWorld.mageCount;
-          final amountOver36 = max(0, mageCount - 36);
-          if (mageCount > 2) {
-            _moveMage(
-              from: event.from,
-              to: event.to,
-              amountToMove: (mageCount / 4).ceil() + amountOver36,
-            );
-          }
+          emit(OnForwardCommandProcessTick(event.from, event.to));
         },
         repeat: true,
         autoStart: true,
@@ -113,6 +103,19 @@ class EventBus {
       if (connection != null) {
         connection.paint.color = Colors.green;
       }
+    }
+  }
+
+  void _handleOnForwardCommandProcessTick(OnForwardCommandProcessTick event) {
+    final mageCount =
+        game.dataStore.gameWorlds[event.from]!.gameWorld.mageCount;
+    final amountOver36 = max(0, mageCount - 36);
+    if (mageCount > 2) {
+      _moveMage(
+        from: event.from,
+        to: event.to,
+        amountToMove: (mageCount / 4).ceil() + amountOver36,
+      );
     }
   }
 
@@ -263,7 +266,6 @@ class EventBus {
     for (final world in game.dataStore.gameWorlds.values) {
       if (world.gameWorld.faction == Faction.evil &&
           world.gameWorld.mageCount > 1) {
-        // 50% chance to send an evil mage
         if (game.random.nextDouble() < 0.5) {
           final possibleTargets = world.gameWorld.connectedWorlds.where((
             worldName,
@@ -315,7 +317,6 @@ class EventBus {
       final endPosition = toWorld.position - direction * toWorld.radius;
 
       mage.position = startPosition;
-      // TODO some bug here if you move the last mage??
       final faction = fromWorld.gameWorld.faction;
       mage.add(
         MoveToEffect(
