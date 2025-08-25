@@ -1,3 +1,5 @@
+import 'dart:math' show max;
+
 import 'package:archmage_rts/drag_line_component.dart';
 import 'package:archmage_rts/main.dart';
 import 'package:flame/components.dart';
@@ -86,12 +88,14 @@ class EventBus {
           // TODO: make this emit an event
           // TODO: make it take into account the size of the world?
           // TODO: take into account overflow?
-          final mageCount = game.dataStore.gameWorlds[event.from]!.mageCount;
+          final mageCount =
+              game.dataStore.gameWorlds[event.from]!.gameWorld.mageCount;
+          final amountOver36 = max(0, mageCount - 36);
           if (mageCount > 2) {
             _moveMage(
               from: event.from,
               to: event.to,
-              amountToMove: (mageCount / 10).ceil(),
+              amountToMove: (mageCount / 4).ceil() + amountOver36,
             );
           }
         },
@@ -99,7 +103,8 @@ class EventBus {
         autoStart: true,
       );
       game.dataStore.moveCommandTimers['${event.from}.${event.to}'] = timer;
-      final mageCount = game.dataStore.gameWorlds[event.from]!.mageCount;
+      final mageCount =
+          game.dataStore.gameWorlds[event.from]!.gameWorld.mageCount;
       _moveMage(
         from: event.from,
         to: event.to,
@@ -151,8 +156,14 @@ class EventBus {
       _addWorld(world);
     }
     // --- Starting World Settings ---
-    game.dataStore.gameWorlds['W1']!.setMageCount(12, Faction.good);
-    game.dataStore.gameWorlds['W2']!.setMageCount(10, Faction.evil);
+    game.dataStore.gameWorlds['W1']!.gameWorld.addMages(
+      count: 12,
+      incomingFaction: Faction.good,
+    );
+    game.dataStore.gameWorlds['W2']!.gameWorld.addMages(
+      count: 10,
+      incomingFaction: Faction.evil,
+    );
 
     // --- HUD ---
     game.camera.viewport.add(Hud());
@@ -181,10 +192,13 @@ class EventBus {
 
   void _handleMageGeneratorTick() {
     for (final world in game.dataStore.gameWorlds.values) {
-      if (world.mageCount > 0 &&
+      if (world.gameWorld.mageCount > 0 &&
           world.gameWorld.faction != Faction.neutral &&
-          world.mageCount < game.dataStore.maxWorldPopulation) {
-        world.incrementMages(1, world.gameWorld.faction);
+          world.gameWorld.mageCount < game.dataStore.maxWorldPopulation) {
+        world.gameWorld.addMages(
+          count: 1,
+          incomingFaction: world.gameWorld.faction,
+        );
       }
     }
   }
@@ -214,11 +228,12 @@ class EventBus {
           .componentsAtPoint(game.dataStore.dragLine!.end)
           .whereType<GameWorldComponent>()
           .firstOrNull
-          ?.name;
+          ?.gameWorld
+          .name;
       if (toWorldName != null) {
         emit(
           OnCreateMoveCommand(
-            from: game.dataStore.dragFromWorld!.name,
+            from: game.dataStore.dragFromWorld!.gameWorld.name,
             to: toWorldName,
           ),
         );
@@ -246,23 +261,29 @@ class EventBus {
 
   void _handleEvilMageAI() {
     for (final world in game.dataStore.gameWorlds.values) {
-      if (world.gameWorld.faction == Faction.evil && world.mageCount > 1) {
+      if (world.gameWorld.faction == Faction.evil &&
+          world.gameWorld.mageCount > 1) {
         // 50% chance to send an evil mage
         if (game.random.nextDouble() < 0.5) {
-          final possibleTargets = world.connectedWorlds.where((worldName) {
+          final possibleTargets = world.gameWorld.connectedWorlds.where((
+            worldName,
+          ) {
             final connectedWorld = game.dataStore.gameWorlds[worldName]!;
             return connectedWorld.gameWorld.faction != Faction.evil ||
-                connectedWorld.mageCount < (world.mageCount - 4);
+                connectedWorld.gameWorld.mageCount <
+                    (world.gameWorld.mageCount - 2);
           }).toList();
 
           if (possibleTargets.isNotEmpty) {
             // Pick a random non-evil adjacent world
             final targetWorldName =
                 possibleTargets[game.random.nextInt(possibleTargets.length)];
+            final amountOver36 = max(0, world.gameWorld.mageCount - 36);
             _moveMage(
-              from: world.name,
+              from: world.gameWorld.name,
               to: targetWorldName,
-              amountToMove: (world.mageCount / 10).ceil(),
+              amountToMove:
+                  (world.gameWorld.mageCount / 2).ceil() + amountOver36,
             );
           }
         }
@@ -277,34 +298,39 @@ class EventBus {
   }) {
     final fromWorld = game.dataStore.gameWorlds[from]!;
     final toWorld = game.dataStore.gameWorlds[to]!;
-    if (fromWorld.connectedWorlds.contains(to) && fromWorld.mageCount > 0) {
-      final count = fromWorld.decrementMages(amountToMove);
-      if (count > 0) {
-        final mage = MageComponent(
-          number: count,
-          size: Vector2.all(30),
-          isEvil: fromWorld.gameWorld.faction == Faction.evil,
-        );
-        mage.anchor = Anchor.center;
+    if (fromWorld.gameWorld.connectedWorlds.contains(to) &&
+        fromWorld.gameWorld.mageCount > 0) {
+      fromWorld.gameWorld.removeMages(count: amountToMove);
 
-        final direction = (toWorld.position - fromWorld.position).normalized();
+      final mage = MageComponent(
+        number: amountToMove,
+        size: Vector2.all(30),
+        isEvil: fromWorld.gameWorld.faction == Faction.evil,
+      );
+      mage.anchor = Anchor.center;
 
-        final startPosition = fromWorld.position + direction * fromWorld.radius;
-        final endPosition = toWorld.position - direction * toWorld.radius;
+      final direction = (toWorld.position - fromWorld.position).normalized();
 
-        mage.position = startPosition;
-        mage.add(
-          MoveToEffect(
-            endPosition,
-            EffectController(speed: 150),
-            onComplete: () {
-              toWorld.incrementMages(count, fromWorld.gameWorld.faction);
-              mage.removeFromParent();
-            },
-          ),
-        );
-        game.world.add(mage);
-      }
+      final startPosition = fromWorld.position + direction * fromWorld.radius;
+      final endPosition = toWorld.position - direction * toWorld.radius;
+
+      mage.position = startPosition;
+      // TODO some bug here if you move the last mage??
+      final faction = fromWorld.gameWorld.faction;
+      mage.add(
+        MoveToEffect(
+          endPosition,
+          EffectController(speed: 150),
+          onComplete: () {
+            toWorld.gameWorld.addMages(
+              count: amountToMove,
+              incomingFaction: faction,
+            );
+            mage.removeFromParent();
+          },
+        ),
+      );
+      game.world.add(mage);
     }
   }
 
