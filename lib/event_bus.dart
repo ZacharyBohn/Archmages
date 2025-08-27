@@ -1,4 +1,4 @@
-import 'dart:math' show max;
+import 'dart:math' show max, min;
 
 import 'package:archmage_rts/drag_line_component.dart';
 import 'package:archmage_rts/main.dart';
@@ -226,7 +226,8 @@ class EventBus {
   }
 
   void _handleCanvasDragEnd() {
-    if (game.dataStore.dragLine != null) {
+    if (game.dataStore.dragLine != null &&
+        game.dataStore.dragFromWorld?.gameWorld.faction == Faction.good) {
       final toWorldName = game.world
           .componentsAtPoint(game.dataStore.dragLine!.end)
           .whereType<GameWorldComponent>()
@@ -302,6 +303,7 @@ class EventBus {
     final toWorld = game.dataStore.gameWorlds[to]!;
     if (fromWorld.gameWorld.connectedWorlds.contains(to) &&
         fromWorld.gameWorld.mageCount > 0) {
+      amountToMove = min(fromWorld.gameWorld.mageCount, amountToMove);
       fromWorld.gameWorld.removeMages(count: amountToMove);
 
       final mage = MageComponent(
