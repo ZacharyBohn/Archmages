@@ -211,10 +211,10 @@ class EventBus {
   }
 
   void _handleCanvasDrag(OnCanvasDrag event) {
-    if (game.dataStore.dragFromWorld == null) {
+    if (game.dataStore.tappedDownWorld == null) {
       game.pan(event.delta);
     } else if (game.dataStore.dragLine == null) {
-      final fromWorldPosition = game.dataStore.dragFromWorld!.position;
+      final fromWorldPosition = game.dataStore.tappedDownWorld!.position;
       game.dataStore.dragLine = DragLineComponent(
         origin: fromWorldPosition,
         end: fromWorldPosition,
@@ -226,8 +226,12 @@ class EventBus {
   }
 
   void _handleCanvasDragEnd() {
-    if (game.dataStore.dragLine != null &&
-        game.dataStore.dragFromWorld?.gameWorld.faction == Faction.good) {
+    // TODO: what if the player is dragging from a
+    // a neutral or evil world?
+    //
+    // Right now, the drag line component is created and
+    // then never removed from the game.world
+    if (game.dataStore.tappedDownWorld?.gameWorld.faction == Faction.good) {
       final toWorldName = game.world
           .componentsAtPoint(game.dataStore.dragLine!.end)
           .whereType<GameWorldComponent>()
@@ -237,19 +241,21 @@ class EventBus {
       if (toWorldName != null) {
         emit(
           OnCreateMoveCommand(
-            from: game.dataStore.dragFromWorld!.gameWorld.name,
+            from: game.dataStore.tappedDownWorld!.gameWorld.name,
             to: toWorldName,
           ),
         );
       }
+    }
+    if (game.dataStore.dragLine != null) {
       game.world.remove(game.dataStore.dragLine!);
     }
     game.dataStore.dragLine = null;
-    game.dataStore.dragFromWorld = null;
+    game.dataStore.tappedDownWorld = null;
   }
 
   void _handleWorldTapDown(OnWorldTapDown event) {
-    game.dataStore.dragFromWorld = game.dataStore.gameWorlds[event.worldName];
+    game.dataStore.tappedDownWorld = game.dataStore.gameWorlds[event.worldName];
   }
 
   void _handleGameTick(OnGameTick event) {

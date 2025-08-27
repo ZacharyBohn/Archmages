@@ -34,7 +34,7 @@ class DataStore {
 
   bool setupComplete = false;
 
-  GameWorldComponent? dragFromWorld;
+  GameWorldComponent? tappedDownWorld;
   DragLineComponent? dragLine;
 
   final Map<String, String> moveCommandsMapping = {};
