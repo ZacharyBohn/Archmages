@@ -1,2 +1,4 @@
 #include "../../Flutter/Flutter-Release.xcconfig"
 #include "Warnings.xcconfig"
+
+EXCLUDED_ARCHS[sdk=macosx*] = x86_64

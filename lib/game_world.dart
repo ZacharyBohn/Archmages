@@ -31,14 +31,20 @@ class GameWorld {
   Faction _faction = Faction.neutral;
 
   void addMages({int count = 1, required Faction incomingFaction}) {
-    if (incomingFaction != this.faction) {
-      _mageCount -= count;
-      if (_mageCount <= 0) {
-        _faction = incomingFaction;
-        _mageCount = -_mageCount;
-      }
-    } else {
+    if (incomingFaction == _faction) {
       _mageCount += count;
+      return;
+    }
+
+    _mageCount -= count;
+    if (_mageCount == 0) {
+      _faction = Faction.neutral;
+      return;
+    }
+    if (_mageCount < 0) {
+      _faction = incomingFaction;
+      _mageCount = -_mageCount;
+      return;
     }
   }
 

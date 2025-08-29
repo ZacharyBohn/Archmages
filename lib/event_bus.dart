@@ -69,40 +69,40 @@ class EventBus {
   }
 
   void _handleMoveCommand(OnCreateMoveCommand event) {
+    // TODO: 2 weird bugs.
+    // 1. Connection lines stay green even after a good world falls
+    // 2. makes evil worlds act weird
     final connectionName = ([event.from, event.to]..sort()).toString();
-    final connection =
-        game.dataStore.connections[connectionName] as LineComponent?;
+    final connection = game.dataStore.connections[connectionName];
 
-    if (game.dataStore.moveCommandsMapping.containsKey(event.to) &&
-        game.dataStore.moveCommandsMapping[event.to] == event.from) {
-      game.dataStore.moveCommandsMapping.remove(event.to);
-      game.dataStore.moveCommandTimers['${event.to}.${event.from}']?.stop();
-      game.dataStore.moveCommandTimers.remove('${event.to}.${event.from}');
+    if (game.dataStore.moveCommandTimers.containsKey(connectionName)) {
+      game.dataStore.moveCommandTimers[connectionName]!.stop();
+      game.dataStore.moveCommandTimers.remove(connectionName);
       if (connection != null) {
         connection.paint.color = const Color(0xFFBBBBBB);
       }
-    } else {
-      game.dataStore.moveCommandsMapping[event.from] = event.to;
-      final timer = Timer(
-        3,
-        onTick: () {
-          // TODO: make this emit an event
-          emit(OnForwardCommandProcessTick(event.from, event.to));
-        },
-        repeat: true,
-        autoStart: true,
-      );
-      game.dataStore.moveCommandTimers['${event.from}.${event.to}'] = timer;
-      final mageCount =
-          game.dataStore.gameWorlds[event.from]!.gameWorld.mageCount;
-      _moveMage(
-        from: event.from,
-        to: event.to,
-        amountToMove: (mageCount / 10).ceil(),
-      );
-      if (connection != null) {
-        connection.paint.color = Colors.green;
-      }
+      return;
+    }
+
+    // Create a new command
+    final timer = Timer(
+      3,
+      onTick: () {
+        emit(OnForwardCommandProcessTick(event.from, event.to));
+      },
+      repeat: true,
+      autoStart: true,
+    );
+    game.dataStore.moveCommandTimers[connectionName] = timer;
+    final mageCount =
+        game.dataStore.gameWorlds[event.from]!.gameWorld.mageCount;
+    _moveMage(
+      from: event.from,
+      to: event.to,
+      amountToMove: (mageCount / 10).ceil(),
+    );
+    if (connection != null) {
+      connection.paint.color = Colors.green;
     }
   }
 
@@ -213,7 +213,8 @@ class EventBus {
   void _handleCanvasDrag(OnCanvasDrag event) {
     if (game.dataStore.tappedDownWorld == null) {
       game.pan(event.delta);
-    } else if (game.dataStore.dragLine == null) {
+    } else if (game.dataStore.dragLine == null &&
+        game.dataStore.tappedDownWorld?.gameWorld.faction == Faction.good) {
       final fromWorldPosition = game.dataStore.tappedDownWorld!.position;
       game.dataStore.dragLine = DragLineComponent(
         origin: fromWorldPosition,
@@ -226,11 +227,6 @@ class EventBus {
   }
 
   void _handleCanvasDragEnd() {
-    // TODO: what if the player is dragging from a
-    // a neutral or evil world?
-    //
-    // Right now, the drag line component is created and
-    // then never removed from the game.world
     if (game.dataStore.tappedDownWorld?.gameWorld.faction == Faction.good) {
       final toWorldName = game.world
           .componentsAtPoint(game.dataStore.dragLine!.end)
@@ -239,6 +235,9 @@ class EventBus {
           ?.gameWorld
           .name;
       if (toWorldName != null) {
+        print(
+          'emitting move command from a ${game.dataStore.tappedDownWorld?.gameWorld.faction} world',
+        );
         emit(
           OnCreateMoveCommand(
             from: game.dataStore.tappedDownWorld!.gameWorld.name,
@@ -284,9 +283,11 @@ class EventBus {
           }).toList();
 
           if (possibleTargets.isNotEmpty) {
-            // Pick a random non-evil adjacent world
-            final targetWorldName =
-                possibleTargets[game.random.nextInt(possibleTargets.length)];
+            final targetWorldName = possibleTargets.reduce((a, b) {
+              final worldA = game.dataStore.gameWorlds[a]!.gameWorld;
+              final worldB = game.dataStore.gameWorlds[b]!.gameWorld;
+              return worldA.mageCount < worldB.mageCount ? a : b;
+            });
             final amountOver36 = max(0, world.gameWorld.mageCount - 36);
             _moveMage(
               from: world.gameWorld.name,
@@ -310,6 +311,7 @@ class EventBus {
     if (fromWorld.gameWorld.connectedWorlds.contains(to) &&
         fromWorld.gameWorld.mageCount > 0) {
       amountToMove = min(fromWorld.gameWorld.mageCount, amountToMove);
+      final faction = fromWorld.gameWorld.faction;
       fromWorld.gameWorld.removeMages(count: amountToMove);
 
       final mage = MageComponent(
@@ -325,7 +327,6 @@ class EventBus {
       final endPosition = toWorld.position - direction * toWorld.radius;
 
       mage.position = startPosition;
-      final faction = fromWorld.gameWorld.faction;
       mage.add(
         MoveToEffect(
           endPosition,
