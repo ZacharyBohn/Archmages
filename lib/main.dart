@@ -53,7 +53,7 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
 
   @override
   void update(double dt) {
-    if (!isMounted) {
+    if (!isMounted || !game.dataStore.setupComplete) {
       return;
     }
     game.eventBus.emit(OnGameTick(dt));
