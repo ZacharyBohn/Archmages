@@ -20,7 +20,12 @@ class OnGameTick extends GameEvent {
 class OnEvilMageAITick extends GameEvent {}
 
 class OnWorldChangedAliance extends GameEvent {
-  OnWorldChangedAliance({required this.oldFaction, required this.newFaction});
+  OnWorldChangedAliance({
+    required this.worldName,
+    required this.oldFaction,
+    required this.newFaction,
+  });
+  final String worldName;
   final Faction oldFaction;
   final Faction newFaction;
 }

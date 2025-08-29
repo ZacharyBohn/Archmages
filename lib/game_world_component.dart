@@ -52,6 +52,7 @@ class GameWorldComponent extends CircleComponent
     if (_previousFaction != gameWorld.faction) {
       game.eventBus.emit(
         OnWorldChangedAliance(
+          worldName: gameWorld.name,
           oldFaction: _previousFaction,
           newFaction: gameWorld.faction,
         ),

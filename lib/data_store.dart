@@ -6,6 +6,13 @@ import 'package:flutter/material.dart' show Color, Colors;
 import 'game_world_component.dart';
 import 'mage_component.dart';
 
+class MoveCommand {
+  MoveCommand(this.timer, this.from, this.to);
+  final Timer timer;
+  final String from;
+  final String to;
+}
+
 class DataStore {
   // game world name -> game world component
   Map<String, GameWorldComponent> gameWorlds = {};
@@ -40,5 +47,5 @@ class DataStore {
 
   // final Map<String, String> moveCommandsMapping = {};
 
-  final Map<String, Timer> moveCommandTimers = {};
+  final Map<String, MoveCommand> moveCommandTimers = {};
 }
