@@ -30,23 +30,18 @@ class EventBus {
   void emit(GameEvent event) {
     if (event is OnBackgroundTapped) {
       _handleOnBackgroundTapped();
-      return;
     }
     if (event is OnGameTick) {
       _handleGameTick(event);
-      return;
     }
     if (event is OnGameStart) {
       _handleGameStart();
-      return;
     }
     if (event is OnEvilMageAITick) {
       _handleEvilMageAI();
-      return;
     }
     if (event is OnWorldChangedAliance) {
       _handleWorldChangeAliance(event);
-      return;
     }
     if (event is OnZoomChanged) {
       _handleZoomChange(event);
@@ -59,7 +54,6 @@ class EventBus {
     }
     if (event is OnWorldTapDown) {
       _handleWorldTapDown(event);
-      return;
     }
     if (event is OnCreateMoveCommand) {
       _handleMoveCommand(event);
@@ -124,7 +118,8 @@ class EventBus {
     final mageCount =
         game.dataStore.gameWorlds[event.from]!.gameWorld.mageCount;
     final amountOver36 = max(0, mageCount - 36);
-    final finalAmountToMove = max(0, (mageCount / 4).ceil()) + amountOver36;
+    int finalAmountToMove = max(0, (mageCount / 4).ceil()) + amountOver36;
+    finalAmountToMove = min(finalAmountToMove, mageCount - 1);
     if (mageCount > 2 && finalAmountToMove > 0) {
       _moveMage(
         from: event.from,
@@ -175,7 +170,7 @@ class EventBus {
     }
     // --- Starting World Settings ---
     game.dataStore.gameWorlds['W1']!.gameWorld.addMages(
-      count: 12,
+      count: 500,
       incomingFaction: Faction.good,
     );
     game.dataStore.gameWorlds['W2']!.gameWorld.addMages(
@@ -267,7 +262,6 @@ class EventBus {
 
   void _handleWorldTapDown(OnWorldTapDown event) {
     game.dataStore.tappedDownWorld = game.dataStore.gameWorlds[event.worldName];
-    print('world ${game.dataStore.tappedDownWorld?.gameWorld.name} was tapped');
   }
 
   void _handleGameTick(OnGameTick event) {
@@ -282,52 +276,52 @@ class EventBus {
   }
 
   void _handleEvilMageAI() {
-    // TODO: somehow red evil worlds think they are neutral?
     for (final world in game.dataStore.gameWorlds.values) {
       if (world.gameWorld.faction == Faction.evil &&
           world.gameWorld.mageCount > 1) {
-        if (game.random.nextDouble() < 0.5) {
-          final possibleTargets = world.gameWorld.connectedWorlds.where((
-            worldName,
-          ) {
-            final connectedWorld = game.dataStore.gameWorlds[worldName]!;
-            return connectedWorld.gameWorld.faction != Faction.evil ||
-                connectedWorld.gameWorld.mageCount <
-                    (world.gameWorld.mageCount - 2);
-          }).toList();
+        final possibleTargets = world.gameWorld.connectedWorlds.where((
+          worldName,
+        ) {
+          final connectedWorld = game.dataStore.gameWorlds[worldName]!;
+          final isOpposingFaction =
+              connectedWorld.gameWorld.faction != Faction.evil;
+          final hasLowMages =
+              connectedWorld.gameWorld.mageCount <
+              (world.gameWorld.mageCount / 1.5);
+          return isOpposingFaction || hasLowMages;
+        }).toList();
 
-          if (possibleTargets.isNotEmpty) {
-            final targetWorldName = possibleTargets.reduce((a, b) {
-              final worldA = game.dataStore.gameWorlds[a]!.gameWorld;
-              final worldB = game.dataStore.gameWorlds[b]!.gameWorld;
-              if (worldA.faction == Faction.good &&
-                  worldB.faction != Faction.good) {
-                return a;
-              }
-              if (worldA.faction != Faction.good &&
-                  worldB.faction == Faction.good) {
-                return b;
-              }
-              return worldA.mageCount < worldB.mageCount ? a : b;
-            });
-            final targetWorld =
-                game.dataStore.gameWorlds[targetWorldName]?.gameWorld;
-            if (targetWorld != null &&
-                targetWorld.faction == Faction.evil &&
-                targetWorld.mageCount >= 40) {
-              return;
+        if (possibleTargets.isNotEmpty) {
+          final targetWorldName = possibleTargets.reduce((a, b) {
+            final worldA = game.dataStore.gameWorlds[a]!.gameWorld;
+            final worldB = game.dataStore.gameWorlds[b]!.gameWorld;
+            if (worldA.faction == Faction.good &&
+                worldB.faction != Faction.good) {
+              return a;
             }
-            final amountOver36 = max(0, world.gameWorld.mageCount - 36);
-            final finalAmountToMove = min(
-              (world.gameWorld.mageCount / 2).ceil() + amountOver36,
-              10,
-            );
-            _moveMage(
-              from: world.gameWorld.name,
-              to: targetWorldName,
-              amountToMove: finalAmountToMove,
-            );
+            if (worldA.faction != Faction.good &&
+                worldB.faction == Faction.good) {
+              return b;
+            }
+            return worldA.mageCount < worldB.mageCount ? a : b;
+          });
+          final targetWorld =
+              game.dataStore.gameWorlds[targetWorldName]?.gameWorld;
+          if (targetWorld != null &&
+              targetWorld.faction == Faction.evil &&
+              targetWorld.mageCount >= 40) {
+            return;
           }
+          final amountOver36 = max(0, world.gameWorld.mageCount - 36);
+          final finalAmountToMove = min(
+            (world.gameWorld.mageCount / 2).ceil() + amountOver36,
+            10,
+          );
+          _moveMage(
+            from: world.gameWorld.name,
+            to: targetWorldName,
+            amountToMove: finalAmountToMove,
+          );
         }
       }
     }
