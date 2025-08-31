@@ -15,3 +15,32 @@ Enemy will start with 1 world.
 Send your mages to other worlds to capture them. Do this by tapping a world to highlight it, then tapping the world you wish to send a mage. OR long press on the target world to send a group of mages.
 
 Each world that you control will gain a mage every so often, but so will the enemies.
+
+## Game Design
+
+Perhaps a pivot from tentacle wars and a harder emphasis on Halo Wars copy
+is in order.
+
+### World Upgrades
+
+Castle -> Knights
+
+Mage Academy -> Mages
+
+Archery Range -> Archers
+
+Mountain Fortress -> Dragons
+
+City level -> Max supported pop points
+
+### Unit Interplay
+
+
+## Controls Design
+
+Have a center cursor
+
+Have several side buttons that switch between different modes (selection, creation, upgrades)
+
+Civ resources at the top of the screen
+

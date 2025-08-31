@@ -160,9 +160,9 @@ class EventBus {
     for (final world in generateWorlds(
       minDistance: game.dataStore.minDistanceBetweenWorlds,
       mapSize: game.worldSize,
-      worldCount: 80,
+      worldCount: 18,
       maxDistance: 700.0,
-      maxConnections: 6,
+      maxConnections: 5,
       worldSize: game.dataStore.worldRadius,
       worldColorOverride: game.dataStore.defaultWorldColor,
     )) {
@@ -170,7 +170,7 @@ class EventBus {
     }
     // --- Starting World Settings ---
     game.dataStore.gameWorlds['W1']!.gameWorld.addMages(
-      count: 500,
+      count: 14,
       incomingFaction: Faction.good,
     );
     game.dataStore.gameWorlds['W2']!.gameWorld.addMages(

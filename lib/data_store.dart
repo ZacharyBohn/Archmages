@@ -24,7 +24,7 @@ class DataStore {
   int evilWorldCount = 1;
 
   double componentScale = 1.0;
-  final double minDistanceBetweenWorlds = 150.0;
+  final double minDistanceBetweenWorlds = 180.0;
   final double worldRadius = 45.0;
 
   // Only gonna be used temporarily =0
