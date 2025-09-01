@@ -1,11 +1,10 @@
+import 'package:archmage_rts/factions.dart';
 import 'package:archmage_rts/game_events.dart';
 import 'package:archmage_rts/main.dart';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
-import 'dart:math';
 
-import 'factions.dart';
 import 'game_world.dart';
 
 class GameWorldComponent extends CircleComponent
@@ -24,48 +23,21 @@ class GameWorldComponent extends CircleComponent
     );
   }
 
+  // Used to determine when this worlds alliance flips
+  Faction _previousFaction = Faction.neutral;
   GameWorld gameWorld;
-  TextComponent? mageCountLabel;
+  late TextComponent _mageCountLabel;
 
-  String get name => gameWorld.name;
-
-  List<String> get connectedWorlds => gameWorld.connectedWorlds;
-
-  int get mageCount => gameWorld.mageCount;
-
-  void setMageCount(int count, Faction faction) {
-    gameWorld.mageCount = count;
-    _updateWorldColorAndAlliance(faction);
-  }
-
-  int decrementMages([int count = 1]) {
-    if (gameWorld.mageCount > 0) {
-      final actualCount = min(count, gameWorld.mageCount);
-      gameWorld.mageCount -= actualCount;
-      if (gameWorld.mageCount == 0) {
-        _updateWorldColorAndAlliance(Faction.neutral);
-      }
-      return actualCount;
-    }
-    return 0;
-  }
-
-  void incrementMages(int count, Faction faction) {
-    if (count == 0) {
-      return;
-    }
-
-    if (faction == gameWorld.faction) {
-      gameWorld.mageCount += count;
-    } else {
-      if (count > gameWorld.mageCount) {
-        _updateWorldColorAndAlliance(faction);
-        gameWorld.mageCount = count - gameWorld.mageCount;
-        gameWorld.faction = faction;
-      } else {
-        gameWorld.mageCount -= count;
-      }
-    }
+  @override
+  Future<void> onLoad() {
+    _mageCountLabel = TextComponent(
+      text: gameWorld.mageCount.toString(),
+      position: size / 2,
+      anchor: Anchor.center,
+      textRenderer: TextPaint(style: TextStyle(color: Colors.white)),
+    );
+    add(_mageCountLabel);
+    return super.onLoad();
   }
 
   @override
@@ -75,46 +47,17 @@ class GameWorldComponent extends CircleComponent
       return;
     }
     scale = Vector2.all(game.dataStore.componentScale);
-    _updateMageCounter();
-  }
-
-  void _updateWorldColorAndAlliance(Faction newFaction) {
-    final oldFaction = gameWorld.faction;
-    if (oldFaction == newFaction) {
-      return;
-    }
-    if (newFaction == Faction.evil) {
-      setColor(Colors.red);
-      newFaction = Faction.evil;
-    } else if (newFaction == Faction.good) {
-      setColor(Colors.green);
-      newFaction = Faction.good;
-    } else if (newFaction == Faction.neutral) {
-      setColor(game.dataStore.defaultWorldColor);
-      newFaction = Faction.neutral;
-    }
-    game.eventBus.emit(
-      OnWorldChangedAliance(oldFaction: oldFaction, newFaction: newFaction),
-    );
-    gameWorld.faction = newFaction;
-  }
-
-  _updateMageCounter() {
-    if (gameWorld.mageCount > 0 && mageCountLabel != null) {
-      mageCountLabel!.text = gameWorld.mageCount.toString();
-    }
-    if (gameWorld.mageCount > 0 && mageCountLabel == null) {
-      mageCountLabel = TextComponent(
-        text: gameWorld.mageCount.toString(),
-        position: size / 2,
-        anchor: Anchor.center,
-        textRenderer: TextPaint(style: TextStyle(color: Colors.white)),
+    _mageCountLabel.text = gameWorld.mageCount.toString();
+    setColor(gameWorld.color);
+    if (_previousFaction != gameWorld.faction) {
+      game.eventBus.emit(
+        OnWorldChangedAliance(
+          worldName: gameWorld.name,
+          oldFaction: _previousFaction,
+          newFaction: gameWorld.faction,
+        ),
       );
-      add(mageCountLabel!);
-    }
-    if (gameWorld.mageCount == 0 && mageCountLabel != null) {
-      remove(mageCountLabel!);
-      mageCountLabel = null;
+      _previousFaction = gameWorld.faction;
     }
   }
 
@@ -122,11 +65,5 @@ class GameWorldComponent extends CircleComponent
   void onTapDown(TapDownEvent event) {
     game.eventBus.emit(OnWorldTapDown(gameWorld.name));
     super.onTapDown(event);
-  }
-
-  @override
-  void setColor(Color color, {Object? paintId}) {
-    gameWorld.color = color;
-    super.setColor(color, paintId: paintId);
   }
 }

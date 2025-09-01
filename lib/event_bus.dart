@@ -1,3 +1,5 @@
+import 'dart:math' show max, min;
+
 import 'package:archmage_rts/drag_line_component.dart';
 import 'package:archmage_rts/main.dart';
 import 'package:flame/components.dart';
@@ -5,6 +7,7 @@ import 'package:flame/effects.dart';
 import 'package:flutter/material.dart';
 
 import 'background_noise.dart';
+import 'data_store.dart';
 import 'factions.dart';
 import 'game_events.dart';
 import 'game_world.dart';
@@ -27,23 +30,18 @@ class EventBus {
   void emit(GameEvent event) {
     if (event is OnBackgroundTapped) {
       _handleOnBackgroundTapped();
-      return;
     }
     if (event is OnGameTick) {
       _handleGameTick(event);
-      return;
     }
     if (event is OnGameStart) {
       _handleGameStart();
-      return;
     }
     if (event is OnEvilMageAITick) {
       _handleEvilMageAI();
-      return;
     }
     if (event is OnWorldChangedAliance) {
       _handleWorldChangeAliance(event);
-      return;
     }
     if (event is OnZoomChanged) {
       _handleZoomChange(event);
@@ -56,48 +54,78 @@ class EventBus {
     }
     if (event is OnWorldTapDown) {
       _handleWorldTapDown(event);
-      return;
     }
     if (event is OnCreateMoveCommand) {
       _handleMoveCommand(event);
     }
+    if (event is OnForwardCommandProcessTick) {
+      _handleOnForwardCommandProcessTick(event);
+    }
   }
 
-  void _handleMoveCommand(OnCreateMoveCommand event) {
-    final connectionName = ([event.from, event.to]..sort()).toString();
-    final connection =
-        game.dataStore.connections[connectionName] as LineComponent?;
-
-    if (game.dataStore.moveCommandsMapping.containsKey(event.to) &&
-        game.dataStore.moveCommandsMapping[event.to] == event.from) {
-      game.dataStore.moveCommandsMapping.remove(event.to);
-      game.dataStore.moveCommandTimers['${event.to}.${event.from}']?.stop();
-      game.dataStore.moveCommandTimers.remove('${event.to}.${event.from}');
+  void _cancelMoveCommand(String connectionName) {
+    final moveCommand = game.dataStore.moveCommandTimers[connectionName];
+    if (moveCommand != null) {
+      moveCommand.timer.stop();
+      game.dataStore.moveCommandTimers.remove(connectionName);
+      final connection = game.dataStore.connections[connectionName];
       if (connection != null) {
         connection.paint.color = const Color(0xFFBBBBBB);
       }
-    } else {
-      game.dataStore.moveCommandsMapping[event.from] = event.to;
-      final timer = Timer(
-        3,
-        onTick: () {
-          // TODO: make this less buggy. GameWorldComponent should use
-          // a state machine. Right now it's getting out of sync.
-          // TODO: make this emit an event
-          // TODO: make it take into account the size of the world?
-          // TODO: take into account overflow?
-          if (game.dataStore.gameWorlds[event.from]!.mageCount > 2) {
-            _moveMage(from: event.from, to: event.to);
-          }
-        },
-        repeat: true,
-        autoStart: true,
+    }
+  }
+
+  void _handleMoveCommand(OnCreateMoveCommand event) {
+    // TODO: move commands are direction-agnostic.
+    // A move command from A to B can be cancelled by a command from B to A.
+    // This can be a problem if both worlds are good-aligned.
+    final connectionName = ([event.from, event.to]..sort()).toString();
+
+    if (game.dataStore.moveCommandTimers.containsKey(connectionName)) {
+      _cancelMoveCommand(connectionName);
+      return;
+    }
+
+    // Create a new command
+    final timer = Timer(
+      3,
+      onTick: () {
+        emit(OnForwardCommandProcessTick(event.from, event.to));
+      },
+      repeat: true,
+      autoStart: true,
+    );
+    game.dataStore.moveCommandTimers[connectionName] = MoveCommand(
+      timer,
+      event.from,
+      event.to,
+    );
+    final mageCount =
+        game.dataStore.gameWorlds[event.from]!.gameWorld.mageCount;
+    _moveMage(
+      from: event.from,
+      to: event.to,
+      amountToMove: (mageCount / 10).ceil(),
+    );
+
+    final connection = game.dataStore.connections[connectionName];
+    if (connection != null) {
+      connection.paint.color = Colors.green;
+    }
+  }
+
+  void _handleOnForwardCommandProcessTick(OnForwardCommandProcessTick event) {
+    final mageCount =
+        game.dataStore.gameWorlds[event.from]!.gameWorld.mageCount;
+    final amountOver36 = max(0, mageCount - 36);
+    int finalAmountToMove = max(0, (mageCount / 4).ceil()) + amountOver36;
+    finalAmountToMove = min(finalAmountToMove, mageCount - 1);
+    if (mageCount > 2 && finalAmountToMove > 0) {
+      _moveMage(
+        from: event.from,
+        to: event.to,
+        amountToMove: finalAmountToMove,
       );
-      game.dataStore.moveCommandTimers['${event.from}.${event.to}'] = timer;
-      _moveMage(from: event.from, to: event.to);
-      if (connection != null) {
-        connection.paint.color = Colors.green;
-      }
     }
   }
 
@@ -132,17 +160,23 @@ class EventBus {
     for (final world in generateWorlds(
       minDistance: game.dataStore.minDistanceBetweenWorlds,
       mapSize: game.worldSize,
-      worldCount: 80,
+      worldCount: 18,
       maxDistance: 700.0,
-      maxConnections: 6,
+      maxConnections: 5,
       worldSize: game.dataStore.worldRadius,
       worldColorOverride: game.dataStore.defaultWorldColor,
     )) {
       _addWorld(world);
     }
     // --- Starting World Settings ---
-    game.dataStore.gameWorlds['W1']!.setMageCount(12, Faction.good);
-    game.dataStore.gameWorlds['W2']!.setMageCount(10, Faction.evil);
+    game.dataStore.gameWorlds['W1']!.gameWorld.addMages(
+      count: 14,
+      incomingFaction: Faction.good,
+    );
+    game.dataStore.gameWorlds['W2']!.gameWorld.addMages(
+      count: 10,
+      incomingFaction: Faction.evil,
+    );
 
     // --- HUD ---
     game.camera.viewport.add(Hud());
@@ -171,10 +205,13 @@ class EventBus {
 
   void _handleMageGeneratorTick() {
     for (final world in game.dataStore.gameWorlds.values) {
-      if (world.mageCount > 0 &&
+      if (world.gameWorld.mageCount > 0 &&
           world.gameWorld.faction != Faction.neutral &&
-          world.mageCount < game.dataStore.maxWorldPopulation) {
-        world.incrementMages(1, world.gameWorld.faction);
+          world.gameWorld.mageCount < game.dataStore.maxWorldPopulation) {
+        world.gameWorld.addMages(
+          count: 1,
+          incomingFaction: world.gameWorld.faction,
+        );
       }
     }
   }
@@ -184,10 +221,11 @@ class EventBus {
   }
 
   void _handleCanvasDrag(OnCanvasDrag event) {
-    if (game.dataStore.dragFromWorld == null) {
+    if (game.dataStore.tappedDownWorld == null) {
       game.pan(event.delta);
-    } else if (game.dataStore.dragLine == null) {
-      final fromWorldPosition = game.dataStore.dragFromWorld!.position;
+    } else if (game.dataStore.dragLine == null &&
+        game.dataStore.tappedDownWorld?.gameWorld.faction == Faction.good) {
+      final fromWorldPosition = game.dataStore.tappedDownWorld!.position;
       game.dataStore.dragLine = DragLineComponent(
         origin: fromWorldPosition,
         end: fromWorldPosition,
@@ -199,28 +237,31 @@ class EventBus {
   }
 
   void _handleCanvasDragEnd() {
-    if (game.dataStore.dragLine != null) {
+    if (game.dataStore.tappedDownWorld?.gameWorld.faction == Faction.good) {
       final toWorldName = game.world
           .componentsAtPoint(game.dataStore.dragLine!.end)
           .whereType<GameWorldComponent>()
           .firstOrNull
-          ?.name;
+          ?.gameWorld
+          .name;
       if (toWorldName != null) {
         emit(
           OnCreateMoveCommand(
-            from: game.dataStore.dragFromWorld!.name,
+            from: game.dataStore.tappedDownWorld!.gameWorld.name,
             to: toWorldName,
           ),
         );
       }
+    }
+    if (game.dataStore.dragLine != null) {
       game.world.remove(game.dataStore.dragLine!);
     }
     game.dataStore.dragLine = null;
-    game.dataStore.dragFromWorld = null;
+    game.dataStore.tappedDownWorld = null;
   }
 
   void _handleWorldTapDown(OnWorldTapDown event) {
-    game.dataStore.dragFromWorld = game.dataStore.gameWorlds[event.worldName];
+    game.dataStore.tappedDownWorld = game.dataStore.gameWorlds[event.worldName];
   }
 
   void _handleGameTick(OnGameTick event) {
@@ -230,63 +271,102 @@ class EventBus {
     game.dataStore.mageGenerator.update(event.dt);
     game.dataStore.evilMageAI.update(event.dt);
     for (final timer in game.dataStore.moveCommandTimers.values) {
-      timer.update(event.dt);
+      timer.timer.update(event.dt);
     }
   }
 
   void _handleEvilMageAI() {
     for (final world in game.dataStore.gameWorlds.values) {
-      if (world.gameWorld.faction == Faction.evil && world.mageCount > 1) {
-        // 50% chance to send an evil mage
-        if (game.random.nextDouble() < 0.5) {
-          final possibleTargets = world.connectedWorlds.where((worldName) {
-            final connectedWorld = game.dataStore.gameWorlds[worldName]!;
-            return connectedWorld.gameWorld.faction != Faction.evil;
-          }).toList();
+      if (world.gameWorld.faction == Faction.evil &&
+          world.gameWorld.mageCount > 1) {
+        final possibleTargets = world.gameWorld.connectedWorlds.where((
+          worldName,
+        ) {
+          final connectedWorld = game.dataStore.gameWorlds[worldName]!;
+          final isOpposingFaction =
+              connectedWorld.gameWorld.faction != Faction.evil;
+          final hasLowMages =
+              connectedWorld.gameWorld.mageCount <
+              (world.gameWorld.mageCount / 1.5);
+          return isOpposingFaction || hasLowMages;
+        }).toList();
 
-          if (possibleTargets.isNotEmpty) {
-            // Pick a random non-evil adjacent world
-            final targetWorldName =
-                possibleTargets[game.random.nextInt(possibleTargets.length)];
-            _moveMage(from: world.name, to: targetWorldName);
+        if (possibleTargets.isNotEmpty) {
+          final targetWorldName = possibleTargets.reduce((a, b) {
+            final worldA = game.dataStore.gameWorlds[a]!.gameWorld;
+            final worldB = game.dataStore.gameWorlds[b]!.gameWorld;
+            if (worldA.faction == Faction.good &&
+                worldB.faction != Faction.good) {
+              return a;
+            }
+            if (worldA.faction != Faction.good &&
+                worldB.faction == Faction.good) {
+              return b;
+            }
+            return worldA.mageCount < worldB.mageCount ? a : b;
+          });
+          final targetWorld =
+              game.dataStore.gameWorlds[targetWorldName]?.gameWorld;
+          if (targetWorld != null &&
+              targetWorld.faction == Faction.evil &&
+              targetWorld.mageCount >= 40) {
+            return;
           }
+          final amountOver36 = max(0, world.gameWorld.mageCount - 36);
+          final finalAmountToMove = min(
+            (world.gameWorld.mageCount / 2).ceil() + amountOver36,
+            10,
+          );
+          _moveMage(
+            from: world.gameWorld.name,
+            to: targetWorldName,
+            amountToMove: finalAmountToMove,
+          );
         }
       }
     }
   }
 
-  void _moveMage({required String from, required String to}) {
+  void _moveMage({
+    required String from,
+    required String to,
+    int amountToMove = 1,
+  }) {
     final fromWorld = game.dataStore.gameWorlds[from]!;
     final toWorld = game.dataStore.gameWorlds[to]!;
-    if (fromWorld.connectedWorlds.contains(to) && fromWorld.mageCount > 0) {
-      final amountToMove = 1;
-      final count = fromWorld.decrementMages(amountToMove);
-      if (count > 0) {
-        final mage = MageComponent(
-          number: count,
-          size: Vector2.all(30),
-          isEvil: fromWorld.gameWorld.faction == Faction.evil,
-        );
-        mage.anchor = Anchor.center;
+    if (fromWorld.gameWorld.connectedWorlds.contains(to) &&
+        fromWorld.gameWorld.mageCount > 0) {
+      amountToMove = min(fromWorld.gameWorld.mageCount, amountToMove);
+      final faction = fromWorld.gameWorld.faction;
+      fromWorld.gameWorld.removeMages(count: amountToMove);
 
-        final direction = (toWorld.position - fromWorld.position).normalized();
+      final mage = MageComponent(
+        number: amountToMove,
+        size: Vector2.all(30),
+        isEvil: faction == Faction.evil,
+      );
+      mage.anchor = Anchor.center;
 
-        final startPosition = fromWorld.position + direction * fromWorld.radius;
-        final endPosition = toWorld.position - direction * toWorld.radius;
+      final direction = (toWorld.position - fromWorld.position).normalized();
 
-        mage.position = startPosition;
-        mage.add(
-          MoveToEffect(
-            endPosition,
-            EffectController(speed: 150),
-            onComplete: () {
-              toWorld.incrementMages(count, fromWorld.gameWorld.faction);
-              mage.removeFromParent();
-            },
-          ),
-        );
-        game.world.add(mage);
-      }
+      final startPosition = fromWorld.position + direction * fromWorld.radius;
+      final endPosition = toWorld.position - direction * toWorld.radius;
+
+      mage.position = startPosition;
+      mage.add(
+        MoveToEffect(
+          endPosition,
+          EffectController(speed: 150),
+          onComplete: () {
+            toWorld.gameWorld.addMages(
+              count: amountToMove,
+              incomingFaction: faction,
+            );
+            mage.removeFromParent();
+          },
+        ),
+      );
+      game.world.add(mage);
     }
   }
 
@@ -297,6 +377,18 @@ class EventBus {
     game.dataStore.evilWorldCount = game.dataStore.gameWorlds.values
         .where((world) => world.gameWorld.faction == Faction.evil)
         .length;
+
+    if (event.newFaction != Faction.good) {
+      final moveCommandsToCancel = <String>[];
+      for (final entry in game.dataStore.moveCommandTimers.entries) {
+        if (entry.value.from == event.worldName) {
+          moveCommandsToCancel.add(entry.key);
+        }
+      }
+      for (final key in moveCommandsToCancel) {
+        _cancelMoveCommand(key);
+      }
+    }
   }
 
   void _addWorld(GameWorld world) {

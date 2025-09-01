@@ -10,11 +10,6 @@ class OnWorldTapDown extends GameEvent {
   String worldName;
 }
 
-// class OnWorldTapUp extends GameEvent {
-//   OnWorldTapUp(this.worldName);
-//   String worldName;
-// }
-
 class OnBackgroundTapped extends GameEvent {}
 
 class OnGameTick extends GameEvent {
@@ -25,7 +20,12 @@ class OnGameTick extends GameEvent {
 class OnEvilMageAITick extends GameEvent {}
 
 class OnWorldChangedAliance extends GameEvent {
-  OnWorldChangedAliance({required this.oldFaction, required this.newFaction});
+  OnWorldChangedAliance({
+    required this.worldName,
+    required this.oldFaction,
+    required this.newFaction,
+  });
+  final String worldName;
   final Faction oldFaction;
   final Faction newFaction;
 }
@@ -44,6 +44,12 @@ class OnCanvasDragEnd extends GameEvent {}
 
 class OnCreateMoveCommand extends GameEvent {
   OnCreateMoveCommand({required this.from, required this.to});
+  final String from;
+  final String to;
+}
+
+class OnForwardCommandProcessTick extends GameEvent {
+  OnForwardCommandProcessTick(this.from, this.to);
   final String from;
   final String to;
 }

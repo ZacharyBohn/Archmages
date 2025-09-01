@@ -45,7 +45,6 @@ List<GameWorld> generateWorlds({
         'W${worlds.length + 1}',
         worldSize,
         newPosition,
-        worldColorOverride,
         connectedWorlds: [],
       );
       worlds.add(newWorld);

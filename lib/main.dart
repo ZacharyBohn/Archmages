@@ -18,7 +18,7 @@ class RTSGame extends PannableGame<RTSWorld> {
   RTSGame({required super.world})
     : super(
         backgroundColor: Color(0xFF111111),
-        worldSize: Vector2(8000, 5000),
+        worldSize: Vector2(6000, 3000),
       ) {
     eventBus = EventBus(this);
     onDrag = _onDrag;
@@ -53,7 +53,7 @@ class RTSWorld extends World with HasGameReference<RTSGame> {
 
   @override
   void update(double dt) {
-    if (!isMounted) {
+    if (!isMounted || !game.dataStore.setupComplete) {
       return;
     }
     game.eventBus.emit(OnGameTick(dt));
