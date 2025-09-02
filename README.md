@@ -6,41 +6,28 @@ A real-time strategy
   <img src="https://img.shields.io/badge/Play-28a745?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Play">
 </a>
 
+## Supported Platforms
+
+Web Desktop only
+
 ## Game Overview
 
 You start with 1 world.
 
 Enemy will start with 1 world.
 
-Send your mages to other worlds to capture them. Do this by tapping a world to highlight it, then tapping the world you wish to send a mage. OR long press on the target world to send a group of mages.
+Win by creating combat units and sending them to destroy the enemy.
 
-Each world that you control will gain a mage every so often, but so will the enemies.
+## Units
 
-## Game Design
+Archers / Mages / Knights / Dragons (Super Units)
 
-Perhaps a pivot from tentacle wars and a harder emphasis on Halo Wars copy
-is in order.
+## Castles
 
-### World Upgrades
+There are designated spots on the map where the player can create a castle.
 
-Castle -> Knights
+Castles can be upgraded to unlock magic and the ability to create units.
 
-Mage Academy -> Mages
+### Castle Upgrades
 
-Archery Range -> Archers
-
-Mountain Fortress -> Dragons
-
-City level -> Max supported pop points
-
-### Unit Interplay
-
-
-## Controls Design
-
-Have a center cursor
-
-Have several side buttons that switch between different modes (selection, creation, upgrades)
-
-Civ resources at the top of the screen
-
+Archery Range / Mage Acedemy / Knight Barracks / Dragon Tower
